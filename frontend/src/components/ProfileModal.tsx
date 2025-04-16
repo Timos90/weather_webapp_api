@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../../backend/static/css/ProfileModal.css';
+import '../css/ProfileModal.css';
 import { ModalProps } from '../types/types';
 
 

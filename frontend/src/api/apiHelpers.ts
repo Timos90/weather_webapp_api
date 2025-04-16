@@ -8,10 +8,12 @@ export const apiRequest = async (url: string, options?: RequestInit) => {
       } catch (e) {
         errorData = { error: 'Unknown error' };
       }
-      throw new Error(errorData.error || 'API request failed');
+      // Throw the raw error data (object) instead of wrapping it in a new Error.
+      throw errorData;
     }
     return response.json();
   };
+  
   
   export const buildUrl = (baseUrl: string, endpoint: string, params: Record<string, any>) => {
     const queryString = Object.entries(params)

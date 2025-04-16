@@ -1,8 +1,13 @@
 from rest_framework import serializers
 
-from apps.weather.models import Forecast
-
-class ForecastSerializer(serializers.ModelSerializer):
+class ForecastSerializer(serializers.Serializer):
+    location = serializers.CharField(max_length=100)
+    timestamp = serializers.DateTimeField()
+    temperature = serializers.FloatField()
+    max_temperature = serializers.FloatField()
+    min_temperature = serializers.FloatField()
+    humidity = serializers.IntegerField()  # Adjust to FloatField if needed
+    weather_description = serializers.CharField(max_length=255)
 
     def validate(self, data):
         if data['max_temperature'] < data['min_temperature']:
@@ -13,8 +18,3 @@ class ForecastSerializer(serializers.ModelSerializer):
         if value < 0 or value > 100:
             raise serializers.ValidationError("Humidity must be between 0 and 100.")
         return value
-
-    class Meta:
-        model = Forecast
-        fields = ['location', 'timestamp', 'temperature', 'max_temperature', 'min_temperature', 'humidity', 'weather_description']
-

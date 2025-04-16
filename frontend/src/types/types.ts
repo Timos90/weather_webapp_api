@@ -76,3 +76,8 @@ export interface LoginModalProps {
 export interface AlertsButtonProps {
   location: string;
 }
+
+export interface UserProfileProps {
+  onFavoriteClick: (location: string) => void;
+  onFavoriteUpdated?: () => void;
+}

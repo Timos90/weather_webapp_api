@@ -1,0 +1,220 @@
+/* ForecastDisplay.css */
+
+/* Overall container using variables */
+.forecast-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--fd-border-radius);
+  padding: var(--fd-padding);
+  background: var(--fd-background);
+  height: 100%;
+  width: var(--fd-width);
+  font-family: 'Roboto', sans-serif;
+}
+
+/* If you wrap forecast content in a card element */
+.forecast-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1.875rem; /* 30px */
+  box-shadow: 0 0.5rem 2rem rgba(31, 38, 135, 0.37); /* 8px, 32px */
+  backdrop-filter: blur(0.5rem); /* 8px */
+  padding: 1.875rem; /* 30px */
+  text-align: center;
+  max-width: 45rem; /* 720px */
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+/* Header styling */
+.forecast-header h2 {
+  margin-bottom: 0.9375rem; /* 15px */
+  font-size: var(--fd-header-font-size);
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0.0625rem 0.0625rem 0.25rem rgba(0, 0, 0, 0.3); /* 1px, 4px */
+}
+
+/* Tabs row remains similar */
+.forecast-tabs {
+  display: flex;
+  justify-content: center;
+  gap: var(--fd-gap);
+  margin-bottom: 1.25rem; /* 20px */
+}
+
+.forecast-tab {
+  background: var(--fd-tab-bg, rgba(255, 255, 255, 0.25));
+  border-radius: 0.625rem; /* 10px */
+  padding: 0.5rem 0.75rem; /* 8px, 12px */
+  cursor: pointer;
+  font-size: var(--fd-forecast-tab-font-size);
+  text-align: center;
+  min-width: 5rem; /* 80px */
+  transition: background 0.3s ease;
+  color: #5f5959;
+}
+
+.forecast-tab:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.forecast-tab.active {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.forecast-tab-date {
+  font-size: 0.8rem;
+  color: #5f5959;
+}
+
+/* Forecast items as a vertical list */
+.forecast-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem; /* 10px */
+  width: 100%;
+  align-items: center;
+}
+
+/* Each forecast item row styling */
+.forecast-item {
+  position: relative;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 0.625rem; /* 10px */
+  box-shadow: 0 0.25rem 0.75rem rgba(31, 38, 135, 0.3); /* 4px, 12px */
+  backdrop-filter: blur(0.5rem); /* 8px */
+  padding: var(--fd-forecast-item-padding);
+  width: 95%;
+  height: 90%;
+  max-width: 42.5rem; /* 680px */
+  display: flex;
+  align-items: center;
+  font-size: var(--fd-forecast-item-font-size);
+  color: #5f5959;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.forecast-item:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.forecast-item.expanded {
+  z-index: 100;
+}
+
+/* Use a grid layout inside each row to enforce uniform column widths */
+.row-summary {
+  display: grid;
+  grid-template-columns: var(--fd-row-time-width) var(--fd-row-temp-width) var(--fd-row-icon-width) var(--fd-row-desc-width) var(--fd-row-expand-width);
+  align-items: center;
+  justify-content: space-evenly;
+  gap: var(--fd-gap);
+  width: 100%;
+  white-space: nowrap;
+}
+
+.row-time {
+  font-weight: bold;
+  text-align: center;
+}
+
+.row-temp {
+  font-size: var(--fd-row-temp-font-size);
+  font-weight: bold;
+  text-align: center;
+}
+
+.row-icon {
+  width: var(--fd-row-icon-width);
+  display: flex;
+  justify-content: center;
+}
+
+.row-icon img {
+  width: 2.5rem; /* 40px */
+  height: 2.5rem; /* 40px */
+  transition: transform 0.3s ease;
+}
+
+.row-icon img:hover {
+  transform: scale(1.1);
+}
+
+.row-desc {
+  width: var(--fd-row-desc-width);
+  font-size: var(--fd-row-desc-font-size);
+  text-transform: capitalize;
+  padding: 0 0.625rem; /* 10px */
+}
+
+.row-expand-label {
+  width: var(--fd-row-expand-width);
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Overlay for expanded details (appears below the row) */
+.forecast-overlay {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10;
+  padding: 0.625rem; /* 10px */
+  border-radius: 0 0 0.625rem 0.625rem; /* 10px */
+  animation: fadeInOverlay 0.3s ease;
+}
+
+.overlay-details {
+  color: #fff;
+  text-align: left;
+  line-height: 1.3;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Responsive adjustments remain similar; you can update fixed values in :root if needed */
+@media only screen and (max-width: 480px) {
+  .forecast-display {
+    width: 100%;
+    
+  }
+  .forecast-card {
+    padding: 0;
+    border-radius: 0.5rem;
+    width: 100%;
+  }
+  .forecast-header h2 {
+    font-size: 1.25rem;
+  }
+  .forecast-tab {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.5rem;
+    min-width: 0;
+  }
+  .forecast-tab-date {
+    font-size: 0.55rem;
+  }
+  .forecast-item {
+    width: 100%;
+    max-width: 23.75rem; /* 380px */
+    font-size: 0.8rem;
+  }
+  .row-summary {
+    grid-template-columns: 50px 60px 100px 100px 30px;
+    gap: 0.5rem;
+  }
+  .row-temp {
+    font-size: 0.9rem;
+  }
+}

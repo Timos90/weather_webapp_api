@@ -1,6 +1,6 @@
 // Modal.tsx
 import React from 'react';
-import '../../../backend/static/css/AlertsModal.css';
+import '../css/AlertsModal.css';
 import { ModalProps } from '../types/types';
 
 const AlertsModal: React.FC<ModalProps> = ({ onClose, children }) => {

@@ -1,13 +1,12 @@
-// NavBar.tsx
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { updateUserProfile, fetchUserProfile } from '../api/user'; 
-import '../../../backend/static/css/NavBar.css';
-import logo from '../../../backend/static/img/logo_WA.svg';
-import searchIcon from '../../../backend/static/img/search-icon.svg';
-const LazyLoginModal = lazy(() => import('./LoginModal'));
-const LazyRegisterModal = lazy(() => import('./RegisterModal'));
+import '../css/NavBar.css';
+import logo from '../img/logo_main2.svg';
+import searchIcon from '../img/search-icon.svg';
 import { NavBarProps } from '../types/types'; // new import
 
+import LoginModal from './LoginModal'; // Directly import LoginModal
+const LazyRegisterModal = React.lazy(() => import('./RegisterModal'));
 
 const NavBar: React.FC<NavBarProps> = ({
   onSearch,
@@ -69,7 +68,7 @@ const NavBar: React.FC<NavBarProps> = ({
   };
 
   const handleLogout = async () => {
-    const response = await fetch('http://localhost:8000/api/v1/user/logout/', {
+    const response = await fetch(`${import.meta.env.VITE_BASE_USER_URL}/logout/`, {
       method: 'POST',
       headers: {
         Authorization: `Token ${localStorage.getItem('auth_token')}`,
@@ -118,6 +117,11 @@ const NavBar: React.FC<NavBarProps> = ({
             }
             setSearchLocation(typed);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch();
+            }
+          }}
           placeholder="Enter location"
           className="search-input"
         />
@@ -146,40 +150,40 @@ const NavBar: React.FC<NavBarProps> = ({
 
       {/* Temperature Unit Switch */}
       <div className="unit-switch-container">
-  <div className="temp-switch">
-    {/* Left label for °C */}
-    <span className={`unit-label-left ${unit === 'C' ? 'active' : ''}`}>
-      °C
-    </span>
+        <div className="temp-switch">
+          {/* Left label for °C */}
+          <span className={`unit-label-left ${unit === 'C' ? 'active' : ''}`}>
+            °C
+          </span>
 
-    {/* The actual toggle switch */}
-    <label className="switch">
-      <input
-        type="checkbox"
-        checked={unit === 'F'}
-        onChange={handleToggleUnit}  // same toggle function as before
-      />
-      <span className="slider round"></span>
-    </label>
+          {/* The actual toggle switch */}
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={unit === 'F'}
+              onChange={handleToggleUnit}  // same toggle function as before
+            />
+            <span className="slider round"></span>
+          </label>
 
-    {/* Right label for °F */}
-    <span className={`unit-label-right ${unit === 'F' ? 'active' : ''}`}>
-      °F
-    </span>
-  </div>
-</div>
+          {/* Right label for °F */}
+          <span className={`unit-label-right ${unit === 'F' ? 'active' : ''}`}>
+            °F
+          </span>
+        </div>
+      </div>
 
       {/* Auth/Profile Buttons */}
       <div className="auth-buttons">
-      {!isAuthenticated ? (
-        <>
-          <button onClick={() => setShowLoginModal(true)} className="login-button">
-            Login
-          </button>
-          <button onClick={() => setShowRegisterModal(true)} className="register-button">
-            Register
-          </button>
-        </>
+        {!isAuthenticated ? (
+          <>
+            <button onClick={() => setShowLoginModal(true)} className="login-button">
+              Login
+            </button>
+            <button onClick={() => setShowRegisterModal(true)} className="register-button">
+              Register
+            </button>
+          </>
         ) : (
           <>
             <button onClick={onProfileClick} className="profile-button">
@@ -191,17 +195,16 @@ const NavBar: React.FC<NavBarProps> = ({
           </>
         )}
       </div>
+
       {/* Render the modals */}
-      <Suspense fallback={<div>Loading login...</div>}>
-        <LazyLoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          onLoginSuccess={() => {
-            setShowLoginModal(false);
-            window.location.reload();
-          }}
-        />
-      </Suspense>
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          window.location.reload();
+        }}
+      />
 
       <Suspense fallback={<div>Loading register...</div>}>
         <LazyRegisterModal

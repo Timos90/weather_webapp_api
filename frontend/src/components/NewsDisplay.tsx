@@ -1,39 +1,61 @@
 import React from 'react';
+import Slider from "react-slick";
 import { NewsDisplayProps } from '../types/types';
-import '../../../backend/static/css/NewsDisplay.css'; // Adjust the path as needed
+import '../css/NewsDisplay.css';
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
 
 const NewsDisplay: React.FC<NewsDisplayProps> = ({ articles }) => {
   if (articles.length === 0) {
-    return <div>No news available.</div>;
+    return <div className="news-display no-news">No news available.</div>;
   }
+
+  // react-slick settings configured for a slideshow
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    autoplay: true,
+    autoplaySpeed: 3000, // slide will change every 3 seconds
+    pauseOnHover: true,
+    slidesToShow: 2, // display one slide at a time for a slideshow effect
+    slidesToScroll: 1,
+    responsive: [
+      { breakpoint: 1024, settings: { slidesToShow: 1 } },
+      { breakpoint: 600, settings: { slidesToShow: 1 } }
+    ]
+  };
 
   return (
     <div className="news-display">
       <h2>Latest Weather News</h2>
-      <ul>
+      <Slider {...settings} className="news-slider">
         {articles.map((article, index) => (
-          <li key={index}>
+          <a 
+            key={index}
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="news-card"
+          >
             {article.urlToImage && (
-              <img
-                src={article.urlToImage}
-                alt={article.title}
-              />
+              <div className="news-image-container">
+                <img 
+                  src={article.urlToImage} 
+                  alt={article.title} 
+                  className="news-image" 
+                />
+              </div>
             )}
-            <div>
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {article.title}
-              </a>
-              <p>
+            <div className="news-details">
+              <h3 className="news-title">{article.title}</h3>
+              <p className="news-date">
                 <em>{new Date(article.publishedAt).toLocaleDateString()}</em>
               </p>
             </div>
-          </li>
+          </a>
         ))}
-      </ul>
+      </Slider>
     </div>
   );
 };

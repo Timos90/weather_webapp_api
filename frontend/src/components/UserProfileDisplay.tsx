@@ -1,14 +1,13 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { fetchUserProfile, updateUserProfile } from '../api/user';
 import { fetchFavoriteLocations, removeFromFavorites } from '../api/weather';
-import '../../../backend/static/css/UserProfilePage.css';
-import '../../../backend/static/css/deleteAnimation.css';
+import '../css/UserProfilePage.css';
+import '../css/deleteAnimation.css';
 import {runDeleteAnimation} from '../utils/deleteAnimation.d';
+import DeleteAccountModal from './DeleteAccountModal';
+import { UserProfileProps } from '../types/types';
 
-interface UserProfileProps {
-  onFavoriteClick: (location: string) => void;
-  onFavoriteUpdated?: () => void;
-}
 
 const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUpdated }) => {
   // ---------- States for field values ----------
@@ -179,6 +178,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
     }
   };
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   return (
     <div className="user-profile-container">
       {/* If there's a generic error, show it here. */}
@@ -259,6 +260,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
 
       <button className="save-btn" onClick={handleSave}>Save Changes</button>
 
+      <button className="delete-account" onClick={() => setShowDeleteModal(true)}>
+        Delete Account
+      </button>
+
+    {/* Render the DeleteAccountModal when triggered */}
+    {showDeleteModal && (
+      <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
+    )}
       {/* FAVORITES */}
       <div className="favorites">
         <h3>Your Favorite Locations:</h3>

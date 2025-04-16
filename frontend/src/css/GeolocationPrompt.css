@@ -1,0 +1,21 @@
+.geo-prompt {
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .geo-button {
+    padding: 0.6rem 1.2rem;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: background 0.2s ease;
+  }
+  
+  .geo-button:hover {
+    background-color: #0b7dda;
+  }
+  

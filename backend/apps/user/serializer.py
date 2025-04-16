@@ -63,3 +63,5 @@ class RegistrationSerializer(serializers.Serializer):
             preferred_temperature_unit=validated_data['preferred_temperature_unit']
         )
         return profile  # or return user if you prefer
+
+

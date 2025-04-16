@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { registerUser } from '../api/user';
-import '../../../backend/static/css/RegisterModal.css';
+import '../css/RegisterModal.css';
 import { RegisterModalProps } from '../types/types';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
@@ -147,11 +147,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
         {/* Show a general error if present */}
         {generalError && <p className="register-error">{generalError}</p>}
 
-        <form onSubmit={handleSubmit}>
+        <form data-testid="register-form" onSubmit={handleSubmit}>
           {/* Username */}
           <div>
-            <label>Username:</label>
+            <label htmlFor="username-input">Username:</label>
             <input
+              id="username-input"
+              data-testid="username-input"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -163,11 +165,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               </p>
             )}
           </div>
-
           {/* Email */}
           <div>
-            <label>Email:</label>
+            <label htmlFor="email-input">Email:</label>
             <input
+              id="email-input"
+              data-testid="email-input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -179,11 +182,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               </p>
             )}
           </div>
-
           {/* Password */}
           <div>
-            <label>Password:</label>
+            <label htmlFor="password-input">Password:</label>
             <input
+              id="password-input"
+              data-testid="password-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -195,11 +199,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               </p>
             )}
           </div>
-
           {/* Location */}
           <div>
-            <label>Location:</label>
+            <label htmlFor="location-input">Location:</label>
             <input
+              id="location-input"
+              data-testid="location-input"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -211,11 +216,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               </p>
             )}
           </div>
-
           {/* Preferred Temperature Unit */}
           <div>
-            <label>Preferred Temperature Unit:</label>
+            <label htmlFor="preferred-unit">Preferred Temperature Unit:</label>
             <select
+              id="preferred-unit"
+              data-testid="preferred-unit"
               value={preferredUnit}
               onChange={(e) => setPreferredUnit(e.target.value)}
             >
@@ -223,7 +229,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               <option value="F">Fahrenheit</option>
             </select>
           </div>
-
           <button type="submit">Register</button>
         </form>
       </div>

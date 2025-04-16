@@ -9,5 +9,4 @@ urlpatterns = [
         path('forecast/', views.ForecastListView.as_view(), name='forecast-list'),
         path('alerts/', views.AlertsView.as_view(), name='alerts-view'),
         path('news/', views.NewsView.as_view(), name='news-view'),
-        # path('radar/', views.RadarView.as_view(), name='radar-view'),
       ]

@@ -1,0 +1,294 @@
+/* General Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root {
+  /* WeatherDisplay default (two-column layout) */
+  --wd-padding: clamp(15px, 2vw, 20px);
+  --wd-background: linear-gradient(135deg, #74ebd5, #acb6e5);
+  --wd-header-font-size: clamp(1.5rem, 2vw, 1.8rem);
+  --wd-temp-font-size: clamp(2.5rem, 3vw, 2.9rem);
+  --wd-icon-size: clamp(80px, 10vw, 110px);
+  --wd-description-font-size: clamp(1.5rem, 2vw, 1.8rem);
+  --wd-details-font-size: clamp(0.8rem, 1.5vw, 1rem);
+  --wd-border-radius: 0px:
+
+  /* ForecastDisplay default (two-column layout) */
+  --fd-height: 100%;
+  --fd-padding: clamp(15px, 2vw, 20px);
+  --fd-background: linear-gradient(to top right, #acb6e5, #74ebd5);
+  --fd-header-font-size: clamp(1.5rem, 2vw, 1.8rem);
+  --fd-forecast-tab-font-size: clamp(1rem, 1.5vw, 1.2rem);
+  --fd-forecast-item-font-size: clamp(0.9rem, 1.5vw, 0.9rem);
+  --fd-forecast-item-padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+  --fd-row-time-width: clamp(60px, 9vw, 60px);
+  --fd-row-temp-width: clamp(60px, 8vw, 80px);
+  --fd-row-temp-font-size: clamp(1rem, 2vw, 1.2rem);
+  --fd-row-icon-width: clamp(150px, 15vw, 200px);
+  --fd-row-desc-width: clamp(150px, 15vw, 170px);
+  --fd-row-desc-font-size: clamp(0.8rem, 1.5vw, 1rem);
+  --fd-row-expand-width: clamp(30px, 5vw, 40px);
+  --fd-gap: clamp(8px, 2vw, 8px);
+  --fd-border-radius: 0px;
+}
+
+/* For the logged-in layout, override the variables with smaller values */
+.logged-in-active {
+  /* WeatherDisplay adjustments */
+  --wd-padding: clamp(8px, 1.5vw, 10px);
+  --wd-width: clamp(90%, 95%, 100%);
+  --wd-header-font-size: clamp(1.2rem, 1.8vw, 1.5rem);
+  --wd-temp-font-size: clamp(1.7rem, 2.7vw, 2.4rem);
+  --wd-icon-size: clamp(60px, 8vw, 80px);
+  --wd-description-font-size: clamp(1rem, 1.5vw, 1.4rem);
+  --wd-details-font-size: clamp(0.7rem, 1vw, 0.9rem);
+  --wd-info-display: flex;
+  --wd-info-align-items: center;
+  --wd-info-justify-content: space-evenly;
+  --wd-border-radius: 30px;
+
+  /* ForecastDisplay adjustments */
+  --fd-width: clamp(90%, 95%, 100%);
+  --fd-padding: clamp(8px, 1.5vw, 10px);
+  --fd-header-font-size: clamp(1rem, 1.5vw, 1.2rem);
+  --fd-forecast-tab-font-size: clamp(0.6rem, 1.1vw, 0.8rem);
+  --fd-forecast-item-font-size: clamp(0.6rem, 1vw, 0.7rem);
+  --fd-forecast-item-padding: clamp(2px, 0.5vw, 3px) clamp(4px, 1vw, 5px);
+  --fd-row-time-width: clamp(60px, 8vw, 80px);
+  --fd-row-temp-width: clamp(50px, 7vw, 70px);
+  --fd-row-temp-font-size: clamp(0.8rem, 1.5vw, 1rem);
+  --fd-row-icon-width: clamp(100px, 12vw, 150px);
+  --fd-row-desc-width: clamp(100px, 12vw, 150px);
+  --fd-row-desc-font-size: clamp(0.8rem, 1.5vw, 1rem);
+  --fd-row-expand-width: clamp(20px, 4vw, 30px);
+  --fd-gap: clamp(5px, 1.5vw, 10px);
+  --fd-border-radius: 30px;
+}
+
+/* Force full screen */
+.home-page {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  flex-direction: column;
+  background-color: #c1eaf7;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #aae0e7;
+  border-bottom: 0.0625rem solid #ddd;
+  width: 100%;
+}
+
+/* Logged-in layout */
+.logged-in-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  min-height: calc(100vh - 6.25rem); /* Adjust based on your top-bar height */
+}
+.logged-in-active .forecast-header h2 {
+  display: none;
+}
+
+.card {
+  width: 100%;
+  height: 100%; /* Make the card fill the grid cell */
+  margin: auto;
+  background-color: rgb(183, 219, 243);
+  border-radius: 1.875rem;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+  padding: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.two-column-layout {
+  flex: 1;
+  display: flex;
+  background-color: rgb(231, 231, 218);
+}
+
+.left-column, .right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Layer Buttons */
+.layer-buttons {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-bottom: 0.625rem;
+}
+
+.layer-buttons button {
+  background-color: #2196F3;
+  border: none;
+  color: #fff;
+  padding: 0.625rem 0.9375rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.layer-buttons button:hover {
+  background-color: #1976D2;
+  transform: scale(1.05);
+}
+
+.layer-buttons button:active {
+  background-color: #1565C0;
+  transform: scale(0.98);
+}
+
+.layer-buttons button:focus {
+  outline: 0.125rem solid #90CAF9;
+  outline-offset: 0.125rem;
+}
+
+.no-news-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Error message */
+.error-message {
+  color: #c52929;
+  font-size: 0.75rem;
+  text-align: center;
+  margin-bottom: 0.3125rem;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  background-color: whitesmoke;
+  border-top: 0.0625rem solid #ddd;
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .logged-in-layout,
+  .two-column-layout {
+    flex-direction: column; /* Stack items vertically */
+    height: auto; /* Let height be determined by content */
+    overflow: auto; /* Allow scrolling if content overflows */
+  }
+
+  /* Optionally add some spacing between stacked elements */
+  .left-half, .right-half {
+    width: 100%;
+    margin-bottom: 1.25rem;
+    flex: none;
+  }
+  .left-top, .left-bottom, .right-top, .right-bottom {
+    width: 100%;
+    margin-bottom: 0.625rem;
+  }
+  .card {
+    /* Remove fixed height and allow content to dictate size */
+    height: auto;
+    min-height: 12.5rem; /* or any value that works for your design */
+    overflow: visible;
+  }
+  .top-bar {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.375rem 0.625rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    /* Tablet (and down) adjustments */
+    --wd-padding: clamp(12px, 1.5vw, 16px);
+    --wd-header-font-size: clamp(1.3rem, 1.8vw, 1.5rem);
+    --wd-temp-font-size: clamp(2rem, 2.5vw, 2.4rem);
+    --wd-icon-size: clamp(70px, 8vw, 90px);
+    --wd-description-font-size: clamp(1.3rem, 1.8vw, 1.5rem);
+    --wd-details-font-size: clamp(0.7rem, 1.3vw, 0.9rem);
+
+    --fd-padding: clamp(12px, 1.5vw, 16px);
+    --fd-header-font-size: clamp(1.3rem, 1.8vw, 1.5rem);
+    --fd-forecast-tab-font-size: clamp(0.8rem, 1.2vw, 1rem);
+    --fd-forecast-item-font-size: clamp(0.8rem, 1.3vw, 0.85rem);
+    --fd-forecast-item-padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 10px);
+    --fd-row-time-width: clamp(50px, 8vw, 60px);
+    --fd-row-temp-width: clamp(50px, 7vw, 70px);
+    --fd-row-temp-font-size: clamp(0.8rem, 1.5vw, 1rem);
+    --fd-row-icon-width: clamp(130px, 12vw, 160px);
+    --fd-row-desc-width: clamp(130px, 12vw, 150px);
+    --fd-row-desc-font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+    --fd-row-expand-width: clamp(25px, 4vw, 30px);
+    --fd-gap: clamp(6px, 1.5vw, 8px);
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    /* Modern small phones adjustments */
+    --wd-padding: clamp(10px, 1.2vw, 14px);
+    --wd-header-font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    --wd-temp-font-size: clamp(1.8rem, 2vw, 2rem);
+    --wd-icon-size: clamp(60px, 7vw, 80px);
+    --wd-description-font-size: clamp(1rem, 1.5vw, 1.2rem);
+    --wd-details-font-size: clamp(0.6rem, 1vw, 0.8rem);
+
+    --fd-padding: clamp(10px, 1.2vw, 14px);
+    --fd-header-font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    --fd-forecast-tab-font-size: clamp(0.7rem, 1vw, 0.8rem);
+    --fd-forecast-item-font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+    --fd-forecast-item-padding: clamp(3px, 0.5vw, 4px) clamp(5px, 1vw, 6px);
+    --fd-row-time-width: clamp(45px, 7vw, 50px);
+    --fd-row-temp-width: clamp(45px, 6vw, 60px);
+    --fd-row-temp-font-size: clamp(0.8rem, 1vw, 0.9rem);
+    --fd-row-icon-width: clamp(110px, 10vw, 130px);
+    --fd-row-desc-width: clamp(110px, 10vw, 130px);
+    --fd-row-desc-font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+    --fd-row-expand-width: clamp(20px, 3vw, 25px);
+    --fd-gap: clamp(4px, 1vw, 6px);
+  }
+}
+
+@media only screen and (max-width: 30rem) { /* 480px */
+  .logged-in-layout{
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    height: auto; /* Let height be determined by content */
+    overflow: auto; /* Allow scrolling if content overflows */
+    width: 100%;
+    padding: 0%;
+  }
+  .logged-in-active{
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    height: auto; /* Let height be determined by content */
+    overflow: auto; /* Allow scrolling if content overflows */
+    width: 100%;
+    padding: 0%;
+  }
+  .card.left-bottom {
+    height: 50vh;
+    min-height: 15rem; /* Set this to whatever minimum works for your design */
+  }
+}

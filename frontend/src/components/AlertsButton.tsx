@@ -1,8 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { fetchAlerts } from '../api/weather';
-import '../../../backend/static/css/AlertsButton.css';
+import '../css/AlertsButton.css'; // Import your CSS file for styling
 import { AlertsButtonProps } from '../types/types';
-
 
 const LazyAlertsModal = lazy(() => import('./AlertsModal'));
 
@@ -14,6 +13,7 @@ const AlertsButton: React.FC<AlertsButtonProps> = ({ location }) => {
   useEffect(() => {
     // Clear old alerts immediately on location change.
     setAlerts([]);
+    setError(''); // Clear previous error
 
     // If there's no location, do nothing.
     if (!location) {
@@ -54,6 +54,9 @@ const AlertsButton: React.FC<AlertsButtonProps> = ({ location }) => {
 
   return (
     <div>
+      {/* Display error message if one exists */}
+      {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
+
       <button 
         className={`alerts-button ${alerts.length > 0 ? 'glow' : ''}`} 
         onClick={handleClick}
@@ -64,31 +67,31 @@ const AlertsButton: React.FC<AlertsButtonProps> = ({ location }) => {
 
       {showModal && (
         <Suspense fallback={<div>Loading alerts...</div>}>
-        <LazyAlertsModal onClose={() => setShowModal(false)}>
-          <div className="alerts-modal-content">
-            <h2>Weather Alerts for {location}</h2>
-            {alerts.length > 0 ? (
-              alerts.map((alert, index) => (
-                <div key={index} className="alert-item">
-                  <h3>{alert.headline}</h3>
-                  <p><strong>Event:</strong> {alert.event}</p>
-                  <p><strong>Type:</strong> {alert.msgtype}</p>
-                  <p><strong>Urgency:</strong> {alert.urgency}</p>
-                  <p>
-                    <strong>Effective:</strong> {new Date(alert.effective).toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Expires:</strong> {new Date(alert.expires).toLocaleString()}
-                  </p>
-                  <p>{alert.desc}</p>
-                </div>
-              ))
-            ) : (
-              <p>No alerts available.</p>
-            )}
-          </div>
-        </LazyAlertsModal>
-      </Suspense>
+          <LazyAlertsModal onClose={() => setShowModal(false)}>
+            <div className="alerts-modal-content">
+              <h2>Weather Alerts for {location}</h2>
+              {alerts.length > 0 ? (
+                alerts.map((alert, index) => (
+                  <div key={index} className="alert-item">
+                    <h3>{alert.headline}</h3>
+                    <p><strong>Event:</strong> {alert.event}</p>
+                    <p><strong>Type:</strong> {alert.msgtype}</p>
+                    <p><strong>Urgency:</strong> {alert.urgency}</p>
+                    <p>
+                      <strong>Effective:</strong> {new Date(alert.effective).toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Expires:</strong> {new Date(alert.expires).toLocaleString()}
+                    </p>
+                    <p>{alert.desc}</p>
+                  </div>
+                ))
+              ) : (
+                <p>No alerts available.</p>
+              )}
+            </div>
+          </LazyAlertsModal>
+        </Suspense>
       )}
     </div>
   );

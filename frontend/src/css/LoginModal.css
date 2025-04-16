@@ -1,0 +1,125 @@
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.7),
+    rgba(50, 50, 50, 0.7)
+  ); /* a dark gradient overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(0.25rem); /* for a frosted-glass effect if supported */
+  }
+  
+  /* Modal container */
+  .login-modal-content {
+  background: #fff;
+  width: 25rem;
+  max-width: 90%;
+  padding: 2.5rem 1.875rem;
+  border-radius: 0.625rem;
+  position: relative;
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.4s ease forwards;
+  }
+  
+  /* "Close" (X) button */
+  .login-modal-close {
+  position: absolute;
+  top: 0.9375rem;
+  right: 0.9375rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s ease;
+  }
+  
+  .login-modal-close:hover {
+  color: #000;
+  }
+  
+  /* Headline */
+  .login-modal-content h2 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1.5rem;
+  text-align: center;
+  }
+  
+  /* Form styling */
+  .login-modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  }
+  
+  /* Label + input grouping */
+  .login-modal-content label {
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 0.3rem;
+  display: inline-block;
+  }
+  
+  /* Input fields */
+  .login-modal-content input[type="text"],
+  .login-modal-content input[type="password"] {
+  border: 0.0625rem solid #ccc;
+  border-radius: 0.375rem;
+  padding: 0.7rem;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: border-color 0.2s ease;
+  }
+  
+  .login-modal-content input[type="text"]:focus,
+  .login-modal-content input[type="password"]:focus {
+  outline: none;
+  border-color: #0077ff; /* highlight color */
+  }
+  
+  /* Submit button */
+  .login-modal-content button[type="submit"] {
+  background: linear-gradient(45deg, #0077ff, #00d4ff);
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.7rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  }
+  
+  .login-modal-content button[type="submit"]:hover {
+  background: linear-gradient(45deg, #0066d1, #00c1e6);
+  transform: scale(1.02);
+  }
+  
+  /* Error text */
+  .login-error {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: -0.5rem;
+  text-align: center;
+  }
+  
+  /* A simple "scale in" animation */
+  @keyframes scaleIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  }

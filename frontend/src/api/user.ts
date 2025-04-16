@@ -1,7 +1,7 @@
 // user.ts
 import { apiRequest,buildUrl } from './apiHelpers';
 
-const BASE_URL = 'http://127.0.0.1:8000/api/v1/user';
+const BASE_URL = import.meta.env.VITE_BASE_USER_URL;
 
 export const getAuthToken = (): string | null => localStorage.getItem('auth_token');
 
@@ -82,4 +82,21 @@ export const updateUserProfile = async (profileData: {
     },
     body: JSON.stringify(profileData),
   });
+};
+
+export const deleteUserAccount = async (email: string) => {
+  const token = localStorage.getItem('auth_token');
+  if (!token) throw new Error('User is not authenticated. Please log in.');
+  const url = buildUrl(BASE_URL, '/delete_account/', {});
+  const data = await apiRequest(url, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Token ${token}`,
+    },
+    body: JSON.stringify({ email }),
+  });
+  // After deletion, you might remove the token
+  localStorage.removeItem('auth_token');
+  return data;
 };

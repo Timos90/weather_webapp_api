@@ -2,7 +2,7 @@ import { ForecastItem } from '../types/types';
 import { NewsArticle } from '../types/types';
 import { apiRequest, buildUrl } from './apiHelpers';
 
-const BASE_URL = 'http://127.0.0.1:8000/api/v1/weather';
+const BASE_URL = import.meta.env.VITE_BASE_WEATHER_URL;
 
 const getAuthToken = (): string | null => localStorage.getItem('auth_token');
 
@@ -11,7 +11,7 @@ export const fetchCoordinates = async (location: string): Promise<{ lat: number;
   if (!api_key) {
     throw new Error('OpenWeatherMap API key is not configured.');
   }
-  const url = buildUrl('http://api.openweathermap.org/geo/1.0/direct', '', {
+  const url = buildUrl('https://api.openweathermap.org/geo/1.0/direct', '', {
     q: location,
     limit: 1,
     appid: api_key,
@@ -50,7 +50,7 @@ const fetchUVIndex = async (lat: number, lon: number): Promise<number> => {
       throw new Error('OpenWeatherMap API key is not configured.');
     }
 
-    const url = `http://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${api_key}`;
+    const url = `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${api_key}`;
     const response = await fetch(url);
 
     if (!response.ok) {

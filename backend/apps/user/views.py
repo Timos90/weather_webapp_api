@@ -139,3 +139,35 @@ class UserProfileView(APIView):
 
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data)
+
+
+
+class DeleteAccountView(APIView):
+    """
+    Deletes the authenticated user’s account if the provided email matches.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        provided_email = request.data.get('email')
+        if not provided_email:
+            return Response(
+                {'error': 'Please provide your email for confirmation.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = request.user
+        # Compare the provided email with the user's email (case-insensitive)
+        if provided_email.lower() != user.email.lower():
+            return Response(
+                {'error': 'Provided email does not match your account email.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Delete the user (this will cascade delete the related UserProfile if set up correctly)
+        user.delete()
+        return Response(
+            {'message': 'Account deleted successfully.'},
+            status=status.HTTP_200_OK
+        )
