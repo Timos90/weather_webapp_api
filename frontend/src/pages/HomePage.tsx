@@ -33,7 +33,7 @@ const HomePage = () => {
   const [layer, setLayer] = useState('temp_new');
   const [favorites, setFavorites] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const isAuthenticated = Boolean(localStorage.getItem('auth_token'));
+  const isAuthenticated = Boolean(sessionStorage.getItem('auth_token'));
   const [unit, setUnit] = useState<'C' | 'F'>('C');
   const [showProfileModal, setShowProfileModal] = useState(false);
 
@@ -46,27 +46,32 @@ const HomePage = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          sessionStorage.setItem('geo_permission', 'granted');
           handleSearch({ lat: latitude, lon: longitude }, userPref);
         },
         (err) => {
           console.error('Geolocation error:', err);
-          setError('Unable to retrieve your location. You can try manually searching for a city.');
+          sessionStorage.setItem('geo_permission', 'denied');
+          setError('Unable to retrieve your location.');
+          handleSearch('Berlin', userPref); // Fallback
         },
         {
-          enableHighAccuracy: false, // fallback to faster location lookup
-          timeout: 20000,            // give it 20s to succeed
-          maximumAge: 60000,         // allow cached location up to 1 minute old
+          enableHighAccuracy: false,
+          timeout: 13000,
+          maximumAge: 60000,
         }
       );
     } else {
       setError('Geolocation is not supported by your browser.');
+      handleSearch('Berlin', userPref);
     }
   };
 
   useEffect(() => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const geoPref = sessionStorage.getItem('geo_permission');
     let userPref: 'C' | 'F' = 'C';
-
+  
     const doProfile = async () => {
       if (isAuthenticated) {
         try {
@@ -78,13 +83,24 @@ const HomePage = () => {
         }
       }
     };
-
+  
     doProfile().then(() => {
-      if (!isSafari) {
+      if (geoPref === 'granted') {
         handleUserGeo();
+      } else if (geoPref === 'denied') {
+        handleSearch('Berlin', userPref);
+      } else {
+        if (isSafari) {
+          // do nothing — wait for button click
+        } else {
+          // Chrome/Firefox: auto request
+          handleUserGeo();
+        }
       }
     });
   }, [isAuthenticated]);
+  
+  
 
   const refetchFavorites = async () => {
     try {
@@ -110,38 +126,34 @@ const HomePage = () => {
     const previous = location;
 
     try {
-      let current;
+      let currentPromise, forecastPromise, coordPromise;
       let cityName = '';
 
       if (typeof loc === 'string') {
-        current = await fetchCurrentWeather(loc, undefined, undefined, paramUnits);
-        cityName = current.name || loc;
-        setLocation(cityName);
+        currentPromise = fetchCurrentWeather(loc, undefined, undefined, paramUnits);
+        forecastPromise = fetchForecast(loc, undefined, undefined, paramUnits);
+        coordPromise = fetchCoordinates(loc);
       } else {
-        current = await fetchCurrentWeather(undefined, loc.lat, loc.lon, paramUnits);
-        cityName = current.name ? current.name : 'Nearest Supported Location';
-        setLocation(cityName);
+        currentPromise = fetchCurrentWeather(undefined, loc.lat, loc.lon, paramUnits);
+        forecastPromise = fetchForecast(undefined, loc.lat, loc.lon, paramUnits);
+        coordPromise = Promise.resolve({ lat: loc.lat, lon: loc.lon });
       }
 
-      const forecastData = await fetchForecast(
-        typeof loc === 'string' ? loc : undefined,
-        typeof loc === 'string' ? undefined : loc.lat,
-        typeof loc === 'string' ? undefined : loc.lon,
-        paramUnits
-      );
+      const [current, forecastData, { lat, lon }] = await Promise.all([
+        currentPromise,
+        forecastPromise,
+        coordPromise,
+      ]);
 
+      cityName = current.name || (typeof loc === 'string' ? loc : 'Unknown');
+
+      setLocation(cityName);
       setCurrentWeather(current);
       setForecast(forecastData);
-
-      if (typeof loc === 'string') {
-        const { lat, lon } = await fetchCoordinates(loc);
-        setLat(lat);
-        setLon(lon);
-      } else {
-        setLat(loc.lat);
-        setLon(loc.lon);
-      }
+      setLat(lat);
+      setLon(lon);
       setZoom(10);
+      prevLocation.current = cityName;
 
       if (isAuthenticated) {
         try {
@@ -156,7 +168,7 @@ const HomePage = () => {
           }
         }
       }
-      prevLocation.current = cityName;
+
       setError(null);
     } catch (err) {
       console.error('Search error:', err);
@@ -223,7 +235,13 @@ const HomePage = () => {
           onUnitChange={handleUnitChange}
           unit={unit}
         />
-        {!location && <GeolocationPrompt onRequest={handleUserGeo} />}
+        {!location &&
+          !sessionStorage.getItem('geo_permission') &&
+          /^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
+            <GeolocationPrompt onRequest={handleUserGeo} />
+        )}
+
+
         {isAuthenticated && (
           <AlertsButton
             location={

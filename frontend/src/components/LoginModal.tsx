@@ -1,5 +1,4 @@
-// src/components/LoginModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { loginUser } from '../api/user';
 import '../css/LoginModal.css';
 import { LoginModalProps } from '../types/types';
@@ -12,6 +11,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    const rememberedUsername = localStorage.getItem('remembered_username');
+    if (rememberedUsername) {
+      setUsername(rememberedUsername);
+      setRememberMe(true);
+    }
+  }, []);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -19,20 +26,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
     try {
       const data: { token: string } = await loginUser(username, password);
       if (data && data.token) {
+        sessionStorage.setItem('auth_token', data.token);
         if (rememberMe) {
-          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('remembered_username', username);
         } else {
-          sessionStorage.setItem('auth_token', data.token);
+          localStorage.removeItem('remembered_username');
         }
       } else {
         throw new Error('Invalid login response. Token not found.');
       }
       onLoginSuccess?.();
+      window.dispatchEvent(new Event('storage')); // notify others
       onClose();
+
     } catch (err) {
       setUsername('');
       setPassword('');
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Invalid username or password. Please try again.');
     }
   };
 

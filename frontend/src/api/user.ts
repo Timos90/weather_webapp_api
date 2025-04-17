@@ -3,7 +3,7 @@ import { apiRequest,buildUrl } from './apiHelpers';
 
 const BASE_URL = import.meta.env.VITE_BASE_USER_URL;
 
-export const getAuthToken = (): string | null => localStorage.getItem('auth_token');
+export const getAuthToken = (): string | null => sessionStorage.getItem('auth_token');
 
 export const loginUser = async (username: string, password: string) => {
   const url = buildUrl(BASE_URL, '/login/', {});
@@ -12,7 +12,7 @@ export const loginUser = async (username: string, password: string) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-  localStorage.setItem('auth_token', data.token);
+  sessionStorage.setItem('auth_token', data.token);
   return data;
 };
 
@@ -52,15 +52,14 @@ export const fetchUserProfile = async () => {
 };
 
 export const logoutUser = async () => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
-  const url = buildUrl(BASE_URL, '/logout/', {});
-  const data = await apiRequest(url, {
+  // This only runs when the user explicitly clicks “Logout”
+  const token = sessionStorage.getItem('auth_token');
+  if (!token) throw new Error('Not logged in');
+  await apiRequest(buildUrl(BASE_URL, '/logout/', {}), {
     method: 'POST',
     headers: { Authorization: `Token ${token}` },
   });
-  localStorage.removeItem('auth_token');
-  return data;
+  sessionStorage.removeItem('auth_token');
 };
 
 export const updateUserProfile = async (profileData: {
@@ -97,6 +96,6 @@ export const deleteUserAccount = async (email: string) => {
     body: JSON.stringify({ email }),
   });
   // After deletion, you might remove the token
-  localStorage.removeItem('auth_token');
+  sessionStorage.removeItem('auth_token');
   return data;
 };

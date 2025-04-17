@@ -30,7 +30,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     if (token) {
       // 1) Fetch user profile
       fetchUserProfile()

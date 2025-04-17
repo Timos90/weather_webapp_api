@@ -22,7 +22,7 @@ const NavBar: React.FC<NavBarProps> = ({
   const [unit, setUnit] = useState<'C' | 'F'>('C'); // local state for the temperature unit
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     setIsAuthenticated(!!token);
 
     // If logged in, fetch user profile to see if they have 'C' or 'F'
@@ -71,13 +71,13 @@ const NavBar: React.FC<NavBarProps> = ({
     const response = await fetch(`${import.meta.env.VITE_BASE_USER_URL}/logout/`, {
       method: 'POST',
       headers: {
-        Authorization: `Token ${localStorage.getItem('auth_token')}`,
+        Authorization: `Token ${sessionStorage.getItem('auth_token')}`,
       },
     });
 
     const data = await response.json();
     if (response.status === 200) {
-      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token');
       alert(data.message);
       window.location.href = '/';
     } else {

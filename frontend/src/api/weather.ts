@@ -4,7 +4,7 @@ import { apiRequest, buildUrl } from './apiHelpers';
 
 const BASE_URL = import.meta.env.VITE_BASE_WEATHER_URL;
 
-const getAuthToken = (): string | null => localStorage.getItem('auth_token');
+const getAuthToken = (): string | null => sessionStorage.getItem('auth_token');
 
 export const fetchCoordinates = async (location: string): Promise<{ lat: number; lon: number }> => {
   const api_key = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
@@ -292,7 +292,7 @@ export const removeFromFavorites = async (city_name: string, country_code: strin
 };
 
 export const fetchAlerts = async (location?: string): Promise<any[]> => {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
   if (!token) {
     throw new Error("User is not authenticated. Please log in.");
   }

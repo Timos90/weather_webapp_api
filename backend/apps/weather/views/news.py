@@ -81,6 +81,8 @@ class NewsView(APIView):
             for article in articles:
                 title_lower = (article.get("title") or "").lower()
                 desc_lower = (article.get("description") or "").lower()
+                if len(title_lower) > 200:
+                    continue
                 if any(kw in title_lower for kw in weather_keywords) \
                    or any(kw in desc_lower for kw in weather_keywords):
                     filtered.append({
