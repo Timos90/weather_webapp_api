@@ -1,6 +1,6 @@
 # Weather App
 
-Live demo: [www.tms‑v.com](https://www.tms‑v.com)
+Live demo: [www.tms-v.com](https://www.tms-v.com)
 
 ## Overview
 
