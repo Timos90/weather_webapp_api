@@ -9,30 +9,20 @@ from apps.weather.serializers.news import NewsSerializer
 from apps.user.models import UserProfile
 
 class NewsView(APIView):
-    """
-    Fetches weather-related news based on the user's location (requires authentication).
-    This version does *not* attempt a fallback to country if no city-based articles are found.
-    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         user = request.user
         user_profile = UserProfile.objects.filter(user=user).first()
-
-        # city location from query param
         location = request.query_params.get('location', '').strip()
 
-        # If user didn't provide location, try user_profile.location
         if not location and user_profile and user_profile.location:
             location = user_profile.location.strip()
 
-        # If still no location, return empty
         if not location:
             return Response([], status=status.HTTP_200_OK)
 
-        # For simplicity, we just do a city-based fetch from NewsAPI
-        # "weather <city>" and filter out relevant articles
         def fetch_newsapi_articles(search_string: str):
             url = 'https://newsapi.org/v2/everything'
             params = {
@@ -41,10 +31,9 @@ class NewsView(APIView):
                 'sortBy': 'publishedAt',
             }
             r = requests.get(url, params=params)
-            r.raise_for_status()  # Raise HTTPError if bad status code
+            r.raise_for_status()
             return r.json().get('articles', [])
 
-        # Define some keywords to filter out only weather-related articles
         weather_keywords = [
             # Arabic
             "طقس", "عاصفة", "مطر", "ثلج", "مناخ", "فيضان", "إعصار", "تايفون", "رياح", "توقع", "مشمس", "غائم", "برد", "رعد", "برق", "ضباب",
@@ -103,12 +92,9 @@ class NewsView(APIView):
                 if serializer.is_valid():
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            # If no articles are found, return an informative message
             return Response([], status=status.HTTP_200_OK)
 
         except requests.exceptions.HTTPError as http_err:
-            # If we hit rate limit, etc.
             if hasattr(http_err, 'response') and http_err.response.status_code == 429:
                 return Response({'error': 'News API request limit reached. Please try again later.'},
                                 status=status.HTTP_429_TOO_MANY_REQUESTS)

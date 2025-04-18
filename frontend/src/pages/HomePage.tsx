@@ -14,12 +14,13 @@ import ForecastDisplay from '../components/ForecastDisplay';
 import NewsDisplay from '../components/NewsDisplay';
 import NavBar from '../components/NavBar';
 import AlertsButton from '../components/AlertsButton';
-const ProfileModal = lazy(() => import('../components/ProfileModal'));
 import UserProfile from '../components/UserProfileDisplay';
 import MapComponent from '../components/MapComponent';
 import GeolocationPrompt from '../components/GeolocationPrompt';
 import '../css/HomePage.css';
 import { ForecastItem, NewsArticle } from '../types/types';
+
+const ProfileModal = lazy(() => import('../components/ProfileModal'));
 
 const HomePage = () => {
   const [location, setLocation] = useState('');
@@ -53,7 +54,7 @@ const HomePage = () => {
           console.error('Geolocation error:', err);
           sessionStorage.setItem('geo_permission', 'denied');
           setError('Unable to retrieve your location.');
-          handleSearch('Berlin', userPref); // Fallback
+          handleSearch('Berlin', userPref);
         },
         {
           enableHighAccuracy: false,
@@ -71,7 +72,7 @@ const HomePage = () => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const geoPref = sessionStorage.getItem('geo_permission');
     let userPref: 'C' | 'F' = 'C';
-  
+
     const doProfile = async () => {
       if (isAuthenticated) {
         try {
@@ -83,31 +84,26 @@ const HomePage = () => {
         }
       }
     };
-  
+
     doProfile().then(() => {
       if (geoPref === 'granted') {
         handleUserGeo();
       } else if (geoPref === 'denied') {
         handleSearch('Berlin', userPref);
       } else {
-        if (isSafari) {
-          // do nothing — wait for button click
-        } else {
-          // Chrome/Firefox: auto request
+        if (!isSafari) {
           handleUserGeo();
         }
       }
     });
   }, [isAuthenticated]);
-  
-  
 
   const refetchFavorites = async () => {
     try {
       const updated = await fetchFavoriteLocations();
       setFavorites(updated);
     } catch (err) {
-      console.error("Unable to fetch favorite locations:", err);
+      console.error('Unable to fetch favorite locations:', err);
     }
   };
 
@@ -219,8 +215,8 @@ const HomePage = () => {
   };
 
   return (
-    <div className={`home-page ${isAuthenticated ? "logged-in-active" : ""}`}>
-      <div className='top-bar'>
+    <div className={`home-page ${isAuthenticated ? 'logged-in-active' : ''}`}>
+      <div className="top-bar">
         <NavBar
           onSearch={(loc) => handleSearch(loc)}
           currentLocation={
@@ -239,9 +235,7 @@ const HomePage = () => {
           !sessionStorage.getItem('geo_permission') &&
           /^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
             <GeolocationPrompt onRequest={handleUserGeo} />
-        )}
-
-
+          )}
         {isAuthenticated && (
           <AlertsButton
             location={
@@ -252,7 +246,6 @@ const HomePage = () => {
           />
         )}
       </div>
-
       {isAuthenticated ? (
         <div className="logged-in-layout">
           <div className="card left-top mobile-first">
@@ -299,7 +292,6 @@ const HomePage = () => {
           </div>
         </div>
       )}
-
       {showProfileModal && (
         <Suspense fallback={<div>Loading...</div>}>
           <ProfileModal onClose={() => setShowProfileModal(false)}>
@@ -313,7 +305,6 @@ const HomePage = () => {
           </ProfileModal>
         </Suspense>
       )}
-
       <footer className="footer">
         <p>© 2025 Weather WebApp made with ♡</p>
       </footer>

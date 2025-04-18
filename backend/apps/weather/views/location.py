@@ -7,25 +7,20 @@ from apps.weather.models.location import FavoriteLocation
 from apps.weather.serializers.location import FavoriteLocationSerializer
 
 class FavoriteLocationView(APIView):
-    """Handles a user's favorite locations."""
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Get all favorite locations of the authenticated user."""
         favorites = FavoriteLocation.objects.filter(user=request.user)
         serializer = FavoriteLocationSerializer(favorites, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        """Add a new favorite location."""
-        # Deserialize the incoming data
         city_name = request.data.get('city_name')
         country_code = request.data.get('country_code')
         latitude = request.data.get('latitude', None)
         longitude = request.data.get('longitude', None)
 
-        # Check if the location already exists for this user
         existing_location = FavoriteLocation.objects.filter(
             user=request.user, 
             city_name=city_name, 
@@ -38,7 +33,6 @@ class FavoriteLocationView(APIView):
                 status=status.HTTP_200_OK
             )
 
-        # Create the new favorite location if it doesn't exist
         serializer = FavoriteLocationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
@@ -47,7 +41,6 @@ class FavoriteLocationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
-        """Remove a favorite location."""
         city_name = request.data.get('city_name')
         country_code = request.data.get('country_code')
         latitude = request.data.get('latitude')

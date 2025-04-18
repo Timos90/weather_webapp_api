@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { fetchAlerts } from '../api/weather';
-import '../css/AlertsButton.css'; // Import your CSS file for styling
+import '../css/AlertsButton.css';
 import { AlertsButtonProps } from '../types/types';
 
 const LazyAlertsModal = lazy(() => import('./AlertsModal'));
@@ -11,26 +11,21 @@ const AlertsButton: React.FC<AlertsButtonProps> = ({ location }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Clear old alerts immediately on location change.
     setAlerts([]);
-    setError(''); // Clear previous error
+    setError('');
 
-    // If there's no location, do nothing.
     if (!location) {
       setAlerts([]);
       return;
     }
 
-    // Set up a cancellation flag to prevent updating state if location changes quickly.
     let isCancelled = false;
 
-    // Optionally debounce the request (e.g., 300ms delay).
     const timeoutId = setTimeout(() => {
       const getAlerts = async () => {
         try {
           const data = await fetchAlerts(location);
           if (!isCancelled) {
-            // If no alerts are returned, explicitly set alerts to an empty array.
             setAlerts(data || []);
           }
         } catch (err) {
@@ -54,7 +49,6 @@ const AlertsButton: React.FC<AlertsButtonProps> = ({ location }) => {
 
   return (
     <div>
-      {/* Display error message if one exists */}
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
 
       <button 

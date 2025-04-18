@@ -4,35 +4,28 @@ import { fetchUserProfile, updateUserProfile } from '../api/user';
 import { fetchFavoriteLocations, removeFromFavorites } from '../api/weather';
 import '../css/UserProfilePage.css';
 import '../css/deleteAnimation.css';
-import {runDeleteAnimation} from '../utils/deleteAnimation.d';
+import { runDeleteAnimation } from '../utils/deleteAnimation.d';
 import DeleteAccountModal from './DeleteAccountModal';
 import { UserProfileProps } from '../types/types';
 
-
 const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUpdated }) => {
-  // ---------- States for field values ----------
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [location, setLocation] = useState('');
   const [preferredTemperatureUnit, setPreferredTemperatureUnit] = useState<'C' | 'F'>('C');
-
-  // ---------- States for field-specific errors ----------
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [locationError, setLocationError] = useState('');
-
-  // ---------- Favorites & a generic error for fallback ----------
   const [favorites, setFavorites] = useState<any[]>([]);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
     if (token) {
-      // 1) Fetch user profile
       fetchUserProfile()
         .then((data) => {
           setLocation(data.location);
@@ -44,14 +37,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         })
         .catch(() => setGeneralError('Unable to fetch user profile.'));
 
-      // 2) Fetch favorite locations
       fetchFavoriteLocations()
         .then(setFavorites)
         .catch(() => setGeneralError('Unable to fetch favorite locations.'));
     }
   }, []);
 
-  // Toggle the user’s unit locally, then call updateUserProfile
   const handleToggleUnit = async () => {
     const newUnit = preferredTemperatureUnit === 'C' ? 'F' : 'C';
     setPreferredTemperatureUnit(newUnit);
@@ -65,16 +56,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         last_name: lastName,
         username,
       });
-      // Update local
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
     } catch (err) {
       setGeneralError('Failed to update unit preference.');
     }
   };
 
-  // ---------------- MAIN "Save Changes" ----------------
   const handleSave = async () => {
-    // Clear all old errors (field-specific + general) before saving
     setUsernameError('');
     setEmailError('');
     setFirstNameError('');
@@ -92,7 +80,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         preferred_temperature_unit: preferredTemperatureUnit,
       });
 
-      // If successful, update local states
       setUsername(updatedProfile.user.username);
       setEmail(updatedProfile.user.email);
       setFirstName(updatedProfile.user.first_name);
@@ -110,15 +97,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
     }
   };
 
-  // ---------- PARSE ERROR MESSAGE AND ASSIGN ----------
   const parseAndAssignErrors = (msg: string) => {
-    // The backend typically returns messages like:
-    // "That username is already in use."
-    // "That email is already in use."
-    // "Please provide a valid email address."
-    // Or a fallback "Failed to update profile."
-    // We'll do simple text matching:
-
     if (msg.includes('username')) {
       setUsernameError(msg);
     } else if (msg.includes('email')) {
@@ -130,12 +109,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
     } else if (msg.includes('last_name')) {
       setLastNameError(msg);
     } else {
-      // Fallback
       setGeneralError(msg);
     }
   };
 
-  // ---------- Deleting a favorite location ----------
   const handleDeleteFavorite = async (
     city_name: string,
     country_code: string,
@@ -144,31 +121,26 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
     try {
-      // 1) Run the trash animation on the clicked button
       const btn = e.currentTarget;
-      runDeleteAnimation(btn); 
-      // or if you’re using the original index.js approach, you can do:
-      // btn.setAttribute('data-running','true');
+      runDeleteAnimation(btn);
 
-      // 2) Actually remove from favorites
       setTimeout(async () => {
         await removeFromFavorites(city_name, country_code, latitude, longitude);
 
         setFavorites((prev) =>
           prev.filter(
-        (f) =>
-          !(
-            f.city_name === city_name &&
-            f.country_code === country_code &&
-            f.latitude === latitude &&
-            f.longitude === longitude
-          )
+            (f) =>
+              !(
+                f.city_name === city_name &&
+                f.country_code === country_code &&
+                f.latitude === latitude &&
+                f.longitude === longitude
+              )
           )
         );
 
         onFavoriteUpdated?.();
-      }, 1500); // Adjust the timeout duration as needed
-    
+      }, 1500);
     } catch (error) {
       if (error instanceof Error) {
         setGeneralError(error.message);
@@ -182,12 +154,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
 
   return (
     <div className="user-profile-container">
-      {/* If there's a generic error, show it here. */}
       {generalError && <p style={{ color: 'red' }}>{generalError}</p>}
 
       <h1>Hello {username}</h1>
 
-      {/* USERNAME */}
       <div>
         <label>Username:</label>
         <input
@@ -198,7 +168,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         {usernameError && <p style={{ color: 'red' }}>{usernameError}</p>}
       </div>
 
-      {/* LOCATION */}
       <div>
         <label>Location:</label>
         <input
@@ -209,7 +178,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         {locationError && <p style={{ color: 'red' }}>{locationError}</p>}
       </div>
 
-      {/* TEMPERATURE UNIT SWITCH */}
       <div style={{ margin: '10px 0', display: 'flex', alignItems: 'center' }}>
         <label style={{ marginRight: '8px' }}>Preferred Temperature Unit:</label>
         <label className="switch">
@@ -220,12 +188,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
           />
           <span className="slider round"></span>
         </label>
-        <span style={{ marginLeft: '0.5rem'}}>
+        <span style={{ marginLeft: '0.5rem' }}>
           {preferredTemperatureUnit === 'C' ? 'Celsius' : 'Fahrenheit'}
         </span>
       </div>
 
-      {/* EMAIL */}
       <div>
         <label>Email:</label>
         <input
@@ -236,7 +203,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         {emailError && <p style={{ color: 'red' }}>{emailError}</p>}
       </div>
 
-      {/* FIRST NAME */}
       <div>
         <label>First Name:</label>
         <input
@@ -247,7 +213,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         {firstNameError && <p style={{ color: 'red' }}>{firstNameError}</p>}
       </div>
 
-      {/* LAST NAME */}
       <div>
         <label>Last Name:</label>
         <input
@@ -264,11 +229,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         Delete Account
       </button>
 
-    {/* Render the DeleteAccountModal when triggered */}
-    {showDeleteModal && (
-      <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
-    )}
-      {/* FAVORITES */}
+      {showDeleteModal && (
+        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
+      )}
+
       <div className="favorites">
         <h3>Your Favorite Locations:</h3>
         {favorites.length > 0 ? (
@@ -280,13 +244,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                 onClick={() => onFavoriteClick(fav.city_name)}
               >
                 <span className="favorite-text">{fav.city_name}, {fav.country_code}</span>
-                
-                {/* Here is the fancy trash button */}
                 <button
                   className="del-btn"
                   data-running="false"
                   onClick={(e) => {
-                    e.stopPropagation(); // Don’t trigger the li’s onClick
+                    e.stopPropagation();
                     handleDeleteFavorite(
                       fav.city_name,
                       fav.country_code,
@@ -296,8 +258,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                     );
                   }}
                 >
-                  {/* This is the fancy structure from your index.css animations */}
-                  {/* Typically you might do something like: */}
                   <svg
                     className="del-btn__icon"
                     viewBox="0 0 48 48"
@@ -305,10 +265,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                     height="48"
                     aria-hidden="true"
                   >
-                    {/* 
-                      1) A <clipPath> to define the fill area for the bottom portion 
-                        of the can. The rect can be sized or repositioned as needed. 
-                    */}
                     <clipPath id="can-clip">
                       <rect
                         className="del-btn__icon-can-fill"
@@ -318,11 +274,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                         height="11"
                       />
                     </clipPath>
-
-                    {/* 
-                      2) A main <g> that sets the stroke, fill, and transforms.
-                        We use stroke="#fff" so it’s a white outline. 
-                    */}
                     <g
                       fill="none"
                       stroke="#fff"
@@ -331,18 +282,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                       strokeWidth="2"
                       transform="translate(12,12)"
                     >
-                      {/* The “lid” group for animations */}
                       <g className="del-btn__icon-lid">
                         <polyline points="9,5 9,1 15,1 15,5" />
                         <polyline points="4,5 20,5" />
                       </g>
-
-                      {/* The “can” group for animations */}
                       <g className="del-btn__icon-can">
-                        {/* 
-                          We define the shape for the can fill, 
-                          then clip it so only the bottom portion is filled.
-                        */}
                         <g strokeWidth="0">
                           <polyline id="can-fill" points="6,10 7,23 17,23 18,10" />
                           <use
@@ -351,7 +295,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
                             fill="#fff"
                           />
                         </g>
-                        {/* The can’s outline stroke */}
                         <polyline points="6,10 7,23 17,23 18,10" />
                       </g>
                     </g>

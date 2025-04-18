@@ -4,13 +4,13 @@ from apps.weather.models.location import FavoriteLocation
 
 class FavoriteLocationSerializer(serializers.ModelSerializer):
     latitude = serializers.FloatField(
-        required=False,  # Not required, will accept null or omitted
-        allow_null=True,  # Allow null values
+        required=False,
+        allow_null=True,
         validators=[MinValueValidator(-90), MaxValueValidator(90)]
     )
     longitude = serializers.FloatField(
-        required=False,  # Not required, will accept null or omitted
-        allow_null=True,  # Allow null values
+        required=False,
+        allow_null=True,
         validators=[MinValueValidator(-180), MaxValueValidator(180)]
     )
 

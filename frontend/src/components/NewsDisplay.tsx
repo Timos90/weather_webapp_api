@@ -10,15 +10,14 @@ const NewsDisplay: React.FC<NewsDisplayProps> = ({ articles }) => {
     return <div className="news-display no-news">No news available.</div>;
   }
 
-  // react-slick settings configured for a slideshow
   const settings = {
     dots: true,
     infinite: true,
     speed: 500,
     autoplay: true,
-    autoplaySpeed: 3000, // slide will change every 3 seconds
+    autoplaySpeed: 3000,
     pauseOnHover: true,
-    slidesToShow: 2, // display one slide at a time for a slideshow effect
+    slidesToShow: 2,
     slidesToScroll: 1,
     responsive: [
       { breakpoint: 1024, settings: { slidesToShow: 1 } },
