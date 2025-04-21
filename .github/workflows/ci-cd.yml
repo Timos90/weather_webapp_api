@@ -1,0 +1,84 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, prod, Timo]
+  pull_request:
+    branches: [main, prod, Timo]
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+  BACKEND_PATH: ./backend
+  FRONTEND_PATH: ./frontend
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.12]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Python dependencies
+        working-directory: ${{ env.BACKEND_PATH }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
+
+      - name: Run Backend Tests (User + Weather apps)
+        working-directory: ${{ env.BACKEND_PATH }}
+        run: |
+          python manage.py test apps.user.tests.test_models apps.user.tests.test_serializers apps.user.tests.test_views --settings=${{ env.DJANGO_SETTINGS_MODULE }}
+          python manage.py test apps.weather.tests.test_models apps.weather.tests.test_serializers apps.weather.tests.test_views --settings=${{ env.DJANGO_SETTINGS_MODULE }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ${{ env.FRONTEND_PATH }}
+        run: npm install
+
+      - name: Run frontend tests
+        working-directory: ${{ env.FRONTEND_PATH }}
+        run: npm run test --if-present
+
+  build-and-deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and Push Backend Image
+        run: |
+          docker build -t timos90/django-backend:latest -f backend/Dockerfile backend
+          docker push timos90/django-backend:latest
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t timos90/react-frontend:latest -f frontend/Dockerfile frontend
+          docker push timos90/react-frontend:latest
+
+      - name: SSH and Deploy on Oracle Cloud Instance
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/weather_webapp_api
+            git pull origin main
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --force-recreate

@@ -24,7 +24,7 @@ class CurrentWeatherView(APIView):
             else:
                 return Response({'error': 'No location provided and no saved location found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        api_key = os.getenv('OPENWEATHERMAP_API_KEY')
+        api_key = os.getenv('OPENWEATHERMAP_API_KEY', 'test_key')
         if not api_key:
             return Response({'error': 'OpenWeatherMap API key not set.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

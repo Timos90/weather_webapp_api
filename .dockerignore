@@ -1,9 +1,8 @@
-# Ignore node_modules (both frontend and any in the root, if applicable)
-**/node_modules
-# Ignore Python bytecode and caches
-**/__pycache__
-**/*.pyc
-# Ignore built frontend assets (they will be created during the Docker build)
-backend/static/frontend
-# Ignore local logs and temporary files
-*.log
+ __pycache__
+ *.pyc
+ *.pyo
+ .env
+ .git
+ .gitignore
+ frontend/node_modules
+ backend/__pycache__
