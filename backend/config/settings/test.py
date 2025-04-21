@@ -1,5 +1,5 @@
-# config/settings/test.py
-from .prod import *
+from .base import *
 
+SECRET_KEY = 'test-secret-key'
 DEBUG = True
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+ALLOWED_HOSTS = ['*']
