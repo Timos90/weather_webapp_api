@@ -1,5 +1,6 @@
 start:
-	cd frontend/ && npm start
+	cd frontend/ && npm start &
+	cd backend/ && .venv/bin/python3 manage.py runserver --settings=config.settings.dev
 
 dev-venv:
 	cd backend/ && python3 -m venv .venv --prompt $(name)
