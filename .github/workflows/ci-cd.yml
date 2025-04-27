@@ -76,9 +76,9 @@ jobs:
           docker build -t timos90/react-frontend:latest -f frontend/Dockerfile frontend
           docker push timos90/react-frontend:latest
 
-      - name: Fix SSH Key Permissions
+      - name: Decode SSH Key
         run: |
-          echo "${{ secrets.ORACLE_SSH_KEY }}" > private_key.pem
+          echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY_BASE64 }}" | base64 -d > private_key.pem
           chmod 600 private_key.pem
         
       - name: SSH and Deploy on Oracle Cloud Instance
