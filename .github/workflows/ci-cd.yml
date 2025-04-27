@@ -76,12 +76,17 @@ jobs:
           docker build -t timos90/react-frontend:latest -f frontend/Dockerfile frontend
           docker push timos90/react-frontend:latest
 
+      - name: Fix SSH Key Permissions
+        run: |
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+        
       - name: SSH and Deploy on Oracle Cloud Instance
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.ORACLE_HOST }}
           username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_KEY }}
+          key_path: private_key.pem
           script: |
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --force-recreate
