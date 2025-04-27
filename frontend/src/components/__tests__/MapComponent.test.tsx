@@ -76,6 +76,7 @@ import { vi } from 'vitest';
        );
      });
  
+     expect(_mapSpy).toBeDefined();
      // setView called
      expect(fakeMap.setView).toHaveBeenCalledWith([10, 20], 5);
  
