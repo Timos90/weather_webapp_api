@@ -5,7 +5,7 @@ import { vi } from 'vitest';
  
  describe('MapComponent', () => {
    let fakeMap: Partial<L.Map>;
-   let mapSpy: ReturnType<typeof vi.spyOn>;
+   let _mapSpy: ReturnType<typeof vi.spyOn>;
    let tileLayerSpy: ReturnType<typeof vi.spyOn>;
    let markerSpy: ReturnType<typeof vi.spyOn>;
    let fakeMarker: Partial<L.Marker>;
@@ -18,7 +18,7 @@ import { vi } from 'vitest';
      } as unknown as L.Map;
  
      // spy on L.map to return our fake map
-     mapSpy = vi.spyOn(L, 'map').mockImplementation(() => fakeMap as unknown as L.Map)as unknown as ReturnType<typeof vi.spyOn>;
+     _mapSpy = vi.spyOn(L, 'map').mockImplementation(() => fakeMap as unknown as L.Map)as unknown as ReturnType<typeof vi.spyOn>;
  
      // spy on tileLayer, return a fake tile layer with addTo
      tileLayerSpy = vi.spyOn(L, 'tileLayer').mockImplementation(() => ({
