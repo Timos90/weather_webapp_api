@@ -82,11 +82,8 @@ jobs:
           chmod 600 private_key.pem
         
       - name: SSH and Deploy on Oracle Cloud Instance
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key_path: private_key.pem
-          script: |
-            docker compose -f docker-compose.prod.yml pull
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.ORACLE_HOST }} "
+            docker compose -f docker-compose.prod.yml pull &&
             docker compose -f docker-compose.prod.yml up -d --force-recreate
+          "
