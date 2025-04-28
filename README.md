@@ -1,5 +1,7 @@
 # Weather App
 
+[![CI/CD Status](https://github.com/Timos90/weather_webapp_api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Timos90/weather_webapp_api/actions)
+
 Live demo: [www.tms-v.com](https://www.tms-v.com)
 
 ## Overview
@@ -9,7 +11,7 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 - **Backend**: Django + Django REST Framework, token‑based auth  
 - **Frontend**: React (Vite + TypeScript), Tailwind‑inspired CSS  
 - **APIs**: OpenWeatherMap, NewsAPI, WeatherAPI  
-- **Testing**: Python `unittest` (backend), Jest (frontend)  
+- **Testing**: Python `unittest` (backend), Vitest (frontend)  
 - **Deployment**: Docker containers on Oracle Cloud with a Namecheap domain  
 
 ---
@@ -71,6 +73,8 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 
 - SSL/TLS configured at load‑balancer level
 
+- **CI/CD**:
+  - GitHub Actions workflow automatically runs tests, builds Docker images, pushes to Docker Hub, and redeploys to the server when merging into `main`.
 
 ---
 
