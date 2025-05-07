@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import UserProfile
-from .serializer import RegistrationSerializer,UserProfileSerializer
+from .serializer import RegistrationSerializer, UserProfileSerializer
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -21,10 +21,8 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            profile = serializer.save()  # this calls create()
-            # Generate token
+            profile = serializer.save()
             token, created = Token.objects.get_or_create(user=profile.user)
-            # Return the newly created user profile
             return Response(
                 {'token': token.key, 'user': UserProfileSerializer(profile).data},
                 status=status.HTTP_201_CREATED
@@ -32,12 +30,7 @@ class RegisterView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LoginView(APIView):
-    """
-    Logs in a user and returns a token.
-    - If "remember me" is needed, handle that in the front-end logic
-    """
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -58,26 +51,19 @@ class LoginView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Get or create a token for the user
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key}, status=status.HTTP_200_OK)
 
-
 class LogoutView(APIView):
-    """
-    Logs out a user by deleting their authentication token.
-    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # This check ensures the user has a token
         if not hasattr(request.user, 'auth_token'):
             return Response({'error': 'No token found.'}, status=status.HTTP_400_BAD_REQUEST)
 
         request.user.auth_token.delete()
         return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
-
 
 class UserProfileView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -99,7 +85,6 @@ class UserProfileView(APIView):
         new_username = data.get('username', user.username)
         new_email = data.get('email', user.email)
 
-        # 1) Check if the new username is different and already in use
         if new_username != user.username:
             if User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
                 return Response(
@@ -107,7 +92,6 @@ class UserProfileView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # 2) Check if the new email is different and already in use (if you also want email uniqueness)
         if new_email != user.email:
             if User.objects.filter(email=new_email).exclude(pk=user.pk).exists():
                 return Response(
@@ -115,15 +99,15 @@ class UserProfileView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        if new_email != user.email:  # Only validate if the user actually changed it
+        if new_email != user.email:
             try:
-                validate_email(new_email)  # raises ValidationError if invalid
+                validate_email(new_email)
             except ValidationError:
                 return Response(
                     {'error': 'Please provide a valid email address.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        # If all checks pass, update
+
         user.first_name = data.get('first_name', user.first_name)
         user.last_name = data.get('last_name', user.last_name)
         user.email = new_email
@@ -140,12 +124,7 @@ class UserProfileView(APIView):
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data)
 
-
-
 class DeleteAccountView(APIView):
-    """
-    Deletes the authenticated user’s account if the provided email matches.
-    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -158,14 +137,12 @@ class DeleteAccountView(APIView):
             )
         
         user = request.user
-        # Compare the provided email with the user's email (case-insensitive)
         if provided_email.lower() != user.email.lower():
             return Response(
                 {'error': 'Provided email does not match your account email.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Delete the user (this will cascade delete the related UserProfile if set up correctly)
         user.delete()
         return Response(
             {'message': 'Account deleted successfully.'},

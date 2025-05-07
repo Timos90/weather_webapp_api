@@ -1,3 +1,9 @@
+export interface WeatherDisplayProps {
+  title: string;
+  data: any;
+  unit: 'C' | 'F';
+}
+
 export interface ForecastItem {
   day_name: string;
   date: string;
@@ -21,8 +27,8 @@ export interface MapComponentProps {
   lat: number;
   lon: number;
   zoom: number;
-  layer: string;  // e.g. "temp_new", "wind_new", "clouds_new", "precipitation_new", etc.
-  apiKey: string; // your OpenWeatherMap API key
+  layer: string;
+  apiKey: string;
 }
 
 export interface NewsArticle {
@@ -32,17 +38,16 @@ export interface NewsArticle {
   content: string;
   urlToImage: string | null;
 }
-  
-  
+
 export interface NewsDisplayProps {
   articles: NewsArticle[];
 }
-    
+
 export interface Favorite {
   city_name: string;
   country_code: string;
 }
-  
+
 export interface NavBarProps {
   onSearch: (location: string) => void;
   currentLocation?: string;
@@ -50,8 +55,6 @@ export interface NavBarProps {
   favorites: Favorite[];
   onAddFavorite: () => void;
   onDeleteFavorite: () => void;
-
-  // Add a callback so NavBar can inform parent about new unit
   onUnitChange: (newUnit: 'C' | 'F') => void;
   unit: 'C' | 'F';
 }

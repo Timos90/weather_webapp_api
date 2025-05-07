@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DeleteAccountModal from '../DeleteAccountModal';
 import * as userApi from '../../api/user';
-
+import { vi } from 'vitest';
+ 
 describe('DeleteAccountModal Component', () => {
   const onClose = vi.fn();
 

@@ -1,7 +1,7 @@
 # tests/test_models.py
 from django.test import TestCase
 from django.contrib.auth.models import User
-from apps.user.models import UserProfile  # adjust the import as needed
+from apps.user.models import UserProfile
 
 class UserProfileModelTest(TestCase):
     def test_str_method(self):

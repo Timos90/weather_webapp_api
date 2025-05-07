@@ -12,9 +12,11 @@ const defaultIcon = L.icon({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [41, 41],
 });
+
 interface ExtendedMapComponentProps extends MapComponentProps {
   onLayerChange: (newLayer: string) => void;
 }
+
 const MapComponent: React.FC<ExtendedMapComponentProps> = ({ lat, lon, zoom, layer, apiKey, onLayerChange }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
@@ -38,8 +40,7 @@ const MapComponent: React.FC<ExtendedMapComponentProps> = ({ lat, lon, zoom, lay
       if (markerRef.current) {
         leafletMapRef.current.removeLayer(markerRef.current);
       }
-      markerRef.current = L.marker([lat, lon], { icon: defaultIcon })
-        .bindPopup('Your Location');
+      markerRef.current = L.marker([lat, lon], { icon: defaultIcon }).bindPopup('Your Location');
       markerRef.current.addTo(leafletMapRef.current);
       if (overlayRef.current) {
         leafletMapRef.current.removeLayer(overlayRef.current);
@@ -53,16 +54,13 @@ const MapComponent: React.FC<ExtendedMapComponentProps> = ({ lat, lon, zoom, lay
 
   return (
     <div className="map-display">
-      <div className='layer-buttons'>
-      <button onClick={() => onLayerChange('temp_new')}>Temperature</button>
+      <div className="layer-buttons">
+        <button onClick={() => onLayerChange('temp_new')}>Temperature</button>
         <button onClick={() => onLayerChange('wind_new')}>Wind</button>
         <button onClick={() => onLayerChange('clouds_new')}>Clouds</button>
         <button onClick={() => onLayerChange('precipitation_new')}>Precip</button>
-        </div>
-    <div
-      className='map'
-      ref={mapRef}
-    />
+      </div>
+      <div className="map" ref={mapRef} />
     </div>
   );
 };

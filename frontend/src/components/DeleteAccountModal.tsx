@@ -1,7 +1,6 @@
-// DeleteAccountModal.tsx
 import React, { useState } from 'react';
 import { deleteUserAccount } from '../api/user';
-import '../css/ProfileModal.css'; // You can reuse your modal CSS
+import '../css/ProfileModal.css';
 
 interface DeleteAccountModalProps {
   onClose: () => void;
@@ -16,7 +15,6 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ onClose }) => {
     try {
       await deleteUserAccount(emailInput);
       alert('Your account has been deleted.');
-      // Optionally, redirect to the homepage or login page:
       window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Failed to delete account.');

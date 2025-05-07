@@ -9,16 +9,13 @@ from rest_framework.response import Response
 from rest_framework import status
 
 class ForecastListView(APIView):
-    """Fetches multi-day forecast for any location or geolocation."""
     authentication_classes = [TokenAuthentication]
-    permission_classes = [AllowAny]  # Guests can view forecasts
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         location_name = request.query_params.get('location')
         lat = request.query_params.get('lat')
         lon = request.query_params.get('lon')
-
-        # Grab 'units' from query param (default 'metric')
         units = request.query_params.get('units', 'metric')
 
         if not location_name and not (lat and lon) and request.user.is_authenticated:

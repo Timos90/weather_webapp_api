@@ -1,18 +1,14 @@
 import React from 'react';
 import '../css/WeatherDisplay.css';
+import { WeatherDisplayProps } from '../types/types';
 
-interface WeatherDisplayProps {
-  title: string;
-  data: any;
-  unit: 'C' | 'F';
-}
 
 const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ title, data, unit }) => {
   const weather = data?.weather ? data.weather[0] : null;
-  const main    = data?.main;
-  const wind    = data?.wind;
-  const sys     = data?.sys;
-  const name   = data?.name;
+  const main = data?.main;
+  const wind = data?.wind;
+  const sys = data?.sys;
+  const name = data?.name;
 
   const formatTemperature = (temp: number) => {
     const suffix = unit === 'C' ? '°C' : '°F';

@@ -57,8 +57,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Create .env.production securely
+        run: |
+          echo "VITE_BASE_USER_URL=${{ secrets.VITE_BASE_USER_URL }}" > frontend/.env.production
+          echo "VITE_BASE_WEATHER_URL=${{ secrets.VITE_BASE_WEATHER_URL }}" >> frontend/.env.production
+          echo "VITE_OPENWEATHERMAP_API_KEY=${{ secrets.VITE_OPENWEATHERMAP_API_KEY }}" >> frontend/.env.production
+
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push Backend Image
         run: |
@@ -70,15 +76,15 @@ jobs:
           docker build -t timos90/react-frontend:latest -f frontend/Dockerfile frontend
           docker push timos90/react-frontend:latest
 
+      - name: Decode SSH Key
+        run: |
+          echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY_BASE64 }}" | base64 -d > private_key.pem
+          chmod 600 private_key.pem
+        
       - name: SSH and Deploy on Oracle Cloud Instance
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
-          script: |
-            cd /home/ubuntu/weather_webapp_api
-            git pull origin main
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml pull
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.ORACLE_HOST }} "
+            docker compose -f docker-compose.prod.yml down --remove-orphans &&
+            docker compose -f docker-compose.prod.yml pull &&
             docker compose -f docker-compose.prod.yml up -d --force-recreate
+          "

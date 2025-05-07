@@ -1,5 +1,5 @@
 import React from 'react';
-import '../css/GeolocationPrompt.css'; // Optional: add custom styling
+import '../css/GeolocationPrompt.css';
 
 type Props = {
   onRequest: () => void;

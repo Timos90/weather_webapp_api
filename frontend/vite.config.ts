@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react'; // Include this if you're using React
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()], // Add this line if you haven't already
+  plugins: [react()],
   base: './',
   server: {
     proxy: {
@@ -12,6 +12,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: true, // enable production source maps for debugging
+    sourcemap: true,
   },
 });

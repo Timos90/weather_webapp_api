@@ -1,9 +1,8 @@
-node_modules
-__pycache__
-*.pyc
-*.pyo
-.env
-.git
-.gitignore
-frontend/node_modules
-backend/__pycache__
+ __pycache__
+ *.pyc
+ *.pyo
+ .env
+ .git
+ .gitignore
+ frontend/node_modules
+ backend/__pycache__

@@ -3,9 +3,9 @@ import { updateUserProfile, fetchUserProfile } from '../api/user';
 import '../css/NavBar.css';
 import logo from '../img/logo_main2.svg';
 import searchIcon from '../img/search-icon.svg';
-import { NavBarProps } from '../types/types'; // new import
+import { NavBarProps } from '../types/types';
 
-import LoginModal from './LoginModal'; // Directly import LoginModal
+import LoginModal from './LoginModal';
 const LazyRegisterModal = React.lazy(() => import('./RegisterModal'));
 
 const NavBar: React.FC<NavBarProps> = ({
@@ -19,13 +19,12 @@ const NavBar: React.FC<NavBarProps> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [searchLocation, setSearchLocation] = useState<string>('');
-  const [unit, setUnit] = useState<'C' | 'F'>('C'); // local state for the temperature unit
+  const [unit, setUnit] = useState<'C' | 'F'>('C');
 
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
     setIsAuthenticated(!!token);
 
-    // If logged in, fetch user profile to see if they have 'C' or 'F'
     if (token) {
       fetchUserProfile()
         .then((profile) => {
@@ -42,7 +41,7 @@ const NavBar: React.FC<NavBarProps> = ({
   const handleToggleUnit = async () => {
     const newUnit = unit === 'C' ? 'F' : 'C';
     setUnit(newUnit);
-    onUnitChange(newUnit); // inform parent so it can re-fetch with new units
+    onUnitChange(newUnit);
 
     if (isAuthenticated) {
       try {
@@ -85,7 +84,6 @@ const NavBar: React.FC<NavBarProps> = ({
     }
   };
 
-  // Determine if the current location is already a favorite
   const isFavorite = currentLocation
     ? favorites.some((fav) => {
         const [city, country] = currentLocation.split(',').map((s) => s.trim());
@@ -98,20 +96,16 @@ const NavBar: React.FC<NavBarProps> = ({
   
   return (
     <div className="navbar">
-      {/* Logo */}
       <div className="logo" onClick={() => window.location.reload()}>
         <img src={logo} alt="WeatherApp Logo" className="logo-image" />
       </div>
 
-      {/* Search Bar */}
       <div className="search-container">
         <input
           type="text"
           value={searchLocation}
           onChange={(e) => {
-            // get the raw input
             let typed = e.target.value;
-            // if there's at least one character, uppercase the first char
             if (typed.length > 0) {
               typed = typed[0].toUpperCase() + typed.slice(1);
             }
@@ -130,7 +124,6 @@ const NavBar: React.FC<NavBarProps> = ({
         </button>
       </div>
 
-      {/* Location and Favorite */}
       <div className="location-and-favorite">
         {currentLocation && (
           <>
@@ -148,32 +141,25 @@ const NavBar: React.FC<NavBarProps> = ({
         )}
       </div>
 
-      {/* Temperature Unit Switch */}
       <div className="unit-switch-container">
         <div className="temp-switch">
-          {/* Left label for °C */}
           <span className={`unit-label-left ${unit === 'C' ? 'active' : ''}`}>
             °C
           </span>
-
-          {/* The actual toggle switch */}
           <label className="switch">
             <input
               type="checkbox"
               checked={unit === 'F'}
-              onChange={handleToggleUnit}  // same toggle function as before
+              onChange={handleToggleUnit}
             />
             <span className="slider round"></span>
           </label>
-
-          {/* Right label for °F */}
           <span className={`unit-label-right ${unit === 'F' ? 'active' : ''}`}>
             °F
           </span>
         </div>
       </div>
 
-      {/* Auth/Profile Buttons */}
       <div className="auth-buttons">
         {!isAuthenticated ? (
           <>
@@ -196,7 +182,6 @@ const NavBar: React.FC<NavBarProps> = ({
         )}
       </div>
 
-      {/* Render the modals */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}

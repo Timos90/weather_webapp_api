@@ -9,7 +9,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields= ['email', 'first_name', 'last_name', 'username'] 
 
-# Location can only contain letters/spaces
 location_validator = RegexValidator(
     regex=r'^[a-zA-Z\s]*$',
     message='Enter a valid location name.'
@@ -27,7 +26,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class RegistrationSerializer(serializers.Serializer):
     username   = serializers.CharField()
     password   = serializers.CharField(write_only=True)
-    email      = serializers.EmailField()  # <--- This automatically enforces valid email
+    email      = serializers.EmailField()
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name  = serializers.CharField(required=False, allow_blank=True)
     location   = serializers.CharField(required=False, allow_blank=True)
@@ -49,7 +48,6 @@ class RegistrationSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        # Create the User and UserProfile
         user = User.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
@@ -62,6 +60,4 @@ class RegistrationSerializer(serializers.Serializer):
             location=validated_data.get('location',''),
             preferred_temperature_unit=validated_data['preferred_temperature_unit']
         )
-        return profile  # or return user if you prefer
-
-
+        return profile

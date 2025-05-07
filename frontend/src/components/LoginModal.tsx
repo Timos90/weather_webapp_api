@@ -36,9 +36,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
         throw new Error('Invalid login response. Token not found.');
       }
       onLoginSuccess?.();
-      window.dispatchEvent(new Event('storage')); // notify others
+      window.dispatchEvent(new Event('storage'));
       onClose();
-
     } catch (err) {
       setUsername('');
       setPassword('');

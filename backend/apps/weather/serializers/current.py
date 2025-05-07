@@ -1,10 +1,6 @@
 from rest_framework import serializers
-
 from apps.weather.models import Current
 from apps.weather.models.location import FavoriteLocation
-
-import requests
-
 
 
 class CurrentSerializer(serializers.ModelSerializer):

@@ -5,4 +5,4 @@ class NewsSerializer(serializers.Serializer):
     url = serializers.URLField()
     publishedAt = serializers.DateTimeField()
     content = serializers.CharField(max_length=500)
-    urlToImage = serializers.URLField(allow_null=True)  # Add this field
+    urlToImage = serializers.URLField(allow_null=True)

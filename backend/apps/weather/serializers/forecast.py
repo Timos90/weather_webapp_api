@@ -6,7 +6,7 @@ class ForecastSerializer(serializers.Serializer):
     temperature = serializers.FloatField()
     max_temperature = serializers.FloatField()
     min_temperature = serializers.FloatField()
-    humidity = serializers.IntegerField()  # Adjust to FloatField if needed
+    humidity = serializers.IntegerField()
     weather_description = serializers.CharField(max_length=255)
 
     def validate(self, data):

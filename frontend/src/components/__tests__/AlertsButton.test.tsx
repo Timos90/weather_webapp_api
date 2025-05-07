@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import AlertsButton from '../AlertsButton';
 import { fetchAlerts } from '../../api/weather';
 import { vi, Mock } from 'vitest';

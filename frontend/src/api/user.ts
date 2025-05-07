@@ -1,5 +1,4 @@
-// user.ts
-import { apiRequest,buildUrl } from './apiHelpers';
+import { apiRequest, buildUrl } from './apiHelpers';
 
 const BASE_URL = import.meta.env.VITE_BASE_USER_URL;
 
@@ -52,7 +51,6 @@ export const fetchUserProfile = async () => {
 };
 
 export const logoutUser = async () => {
-  // This only runs when the user explicitly clicks “Logout”
   const token = sessionStorage.getItem('auth_token');
   if (!token) throw new Error('Not logged in');
   await apiRequest(buildUrl(BASE_URL, '/logout/', {}), {
@@ -95,7 +93,6 @@ export const deleteUserAccount = async (email: string) => {
     },
     body: JSON.stringify({ email }),
   });
-  // After deletion, you might remove the token
   sessionStorage.removeItem('auth_token');
   return data;
 };

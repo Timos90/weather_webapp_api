@@ -1,23 +1,17 @@
 from .base import *
 import environs
+import os
+
 
 env = environs.Env()
 
 env.read_env(str(BASE_DIR / '.env'))
 
-# SECURITY WARNING: keep the secret key used in production secret!
-
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
-THIRD_PARTY_APPS = [
-    
-]
-
-import os
+THIRD_PARTY_APPS = []
 
 DATABASES = {
     "default": {
@@ -26,15 +20,16 @@ DATABASES = {
         "USER": os.environ.get('DB_USER', 'default_user'),
         "PASSWORD": os.environ.get('DB_PWD', 'default_password'),
         "PORT": os.environ.get('DB_PORT', '5432'),
-        "HOST": os.environ.get('DB_HOST', 'db'),  # 'db' is your Docker service name
+        "HOST": os.environ.get('DB_HOST', 'db'),
     }
 }
-SECRET_KEY= env('SECRET_KEY')
+
+SECRET_KEY = env('SECRET_KEY')
 WEATHER_API_KEY = env('WEATHER_API_KEY')
 OPENWEATHERMAP_API_KEY = env('OPENWEATHERMAP_API_KEY')
 NEWS_API_KEY = env('NEWS_API_KEY')
 
-STATIC_ROOT = str(BASE_DIR /"staticfiles")
+STATIC_ROOT = str(BASE_DIR / "staticfiles")
 STATICFILES_DIRS = []
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
