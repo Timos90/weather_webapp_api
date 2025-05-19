@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import NavBar from '../../components/NavBar';
 import { vi } from 'vitest';
- import * as userApi from '../../api/user';
+import axios from 'axios';
+import * as userApi from '../../api/user';
  
  describe('NavBar Component', () => {
    const onSearch = vi.fn();
@@ -141,33 +142,49 @@ import { vi } from 'vitest';
    });
  
    it('handles logout success and failure', async () => {
-     sessionStorage.setItem('auth_token', 'token');
-     const good = { status: 200, json: async () => ({ message: 'bye' }) } as any;
-     const bad = { status: 400, json: async () => ({ error: 'err' }) } as any;
-     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(good).mockResolvedValueOnce(bad));
-     vi.stubGlobal('alert', vi.fn());
- 
-     render(
-       <NavBar
-         onSearch={onSearch}
-         onProfileClick={onProfileClick}
-         onUnitChange={onUnitChange}
-         currentLocation=""
-         favorites={[]}
-         onAddFavorite={onAddFavorite}
-         onDeleteFavorite={onDeleteFavorite}
-         unit="C"
-       />
-     );
- 
-     fireEvent.click(screen.getByRole('button', { name: /logout/i }));
-     await waitFor(() => expect(alert).toHaveBeenCalledWith('bye'));
-     expect(sessionStorage.getItem('auth_token')).toBeNull();
-     expect(window.location.href).toContain('/');
- 
-     fireEvent.click(screen.getByRole('button', { name: /logout/i }));
-     await waitFor(() => expect(alert).toHaveBeenCalledWith('err'));
-   });
+    sessionStorage.setItem('auth_token', 'token');
+    
+    // Mock axios instead of fetch
+    vi.spyOn(axios, 'post').mockResolvedValueOnce({
+      data: { message: 'bye' }
+    } as any).mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { 
+        data: { error: 'err' } 
+      }
+    } as any);
+    
+    vi.stubGlobal('alert', vi.fn());
+    vi.stubGlobal('window', { location: { href: '' } });
+  
+    render(
+      <NavBar
+        onSearch={onSearch}
+        onProfileClick={onProfileClick}
+        onUnitChange={onUnitChange}
+        currentLocation=""
+        favorites={[]}
+        onAddFavorite={onAddFavorite}
+        onDeleteFavorite={onDeleteFavorite}
+        unit="C"
+      />
+    );
+  
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('bye'));
+    expect(sessionStorage.getItem('auth_token')).toBeNull();
+    expect(window.location.href).toContain('/');
+  
+    // Reset mock for second test
+    vi.clearAllMocks();
+    sessionStorage.setItem('auth_token', 'token');
+  
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('err'));
+    
+    // Restore the original implementation
+    vi.restoreAllMocks();
+  });
  
    it('opens and closes login & register modals', () => {
      render(
