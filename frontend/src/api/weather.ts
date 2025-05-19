@@ -1,6 +1,7 @@
 import { ForecastItem } from '../types/types';
 import { NewsArticle } from '../types/types';
 import { apiRequest, buildUrl } from './apiHelpers';
+import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BASE_WEATHER_URL;
 
@@ -48,16 +49,13 @@ const fetchUVIndex = async (lat: number, lon: number): Promise<number> => {
       throw new Error('OpenWeatherMap API key is not configured.');
     }
     const url = `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${api_key}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error fetching UV index data');
-    }
-    const data = await response.json();
-    return data.value;
+    const response = await axios.get(url);
+    return response.data.value;
   } catch (error) {
     console.error("Error fetching UV index:", error);
-    if (error instanceof Error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.message || 'Error fetching UV index data');
+    } else if (error instanceof Error) {
       throw new Error(error.message || 'Error fetching UV index data');
     } else {
       throw new Error('Error fetching UV index data');
@@ -80,12 +78,8 @@ export const fetchForecast = async (
     } else {
       throw new Error('Please provide a location or geolocation coordinates.');
     }
-    const response = await fetch(url);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error fetching forecast data');
-    }
-    const data = await response.json();
+    const response = await axios.get(url);
+    const data = response.data;
     const formatDate = (dateObj: Date): string => {
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
@@ -149,29 +143,35 @@ export const fetchNews = async (location?: string): Promise<NewsArticle[]> => {
     const token = getAuthToken();
     if (!token) throw new Error("User is not authenticated. Please log in.");
     const url = `${BASE_URL}/news/?location=${encodeURIComponent(location || '')}`;
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      if (response.status === 429) {
-        throw new Error(errorData.error || 'News API request limit reached. Please try again later.');
+    
+    try {
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
+      });
+      
+      const data = response.data;
+      const articles = data.map((article: any) => ({
+        title: article.title,
+        url: article.url,
+        publishedAt: article.publishedAt,
+        content: article.content,
+        urlToImage: article.urlToImage || null,
+      }));
+      
+      if (articles.length === 0) {
+        console.info(`No news articles found for ${location || 'the specified location'}.`);
       }
-      console.info(`No news articles found for ${location || 'the specified location'}.`);
+      
+      return articles;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 429) {
+          throw new Error(error.response.data.error || 'News API request limit reached. Please try again later.');
+        }
+        console.info(`No news articles found for ${location || 'the specified location'}.`);
+      }
       return [];
     }
-    const data = await response.json();
-    const articles = data.map((article: any) => ({
-      title: article.title,
-      url: article.url,
-      publishedAt: article.publishedAt,
-      content: article.content,
-      urlToImage: article.urlToImage || null,
-    }));
-    if (articles.length === 0) {
-      console.info(`No news articles found for ${location || 'the specified location'}.`);
-    }
-    return articles;
   } catch (error) {
     console.error("News fetch error:", error);
     if (error instanceof Error && error.message.includes('News API request limit reached')) {
@@ -184,64 +184,67 @@ export const fetchNews = async (location?: string): Promise<NewsArticle[]> => {
 export const fetchFavoriteLocations = async () => {
   const token = getAuthToken();
   if (!token) throw new Error('User is not authenticated. Please log in.');
-  const response = await fetch(`${BASE_URL}/favorites/`, {
-    headers: {
-      Authorization: `Token ${token}`,
-    },
-  });
-  const data = await response.json();
-  if (response.status === 200) {
-    return data;
-  } else {
-    throw new Error(data.error || 'Unable to fetch favorite locations.');
+  try {
+    const response = await axios.get(`${BASE_URL}/favorites/`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Unable to fetch favorite locations.');
+    }
+    throw error;
   }
 };
 
 export const addToFavorites = async (city_name: string, country_code: string, latitude: number, longitude: number) => {
   const token = getAuthToken();
   if (!token) throw new Error('User is not authenticated. Please log in.');
-  const response = await fetch(`${BASE_URL}/favorites/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Token ${token}`,
-    },
-    body: JSON.stringify({
+  try {
+    const response = await axios.post(`${BASE_URL}/favorites/`, {
       city_name,
       country_code,
       latitude,
       longitude,
-    }),
-  });
-  const data = await response.json();
-  if (response.status === 201) {
-    return data;
-  } else {
-    throw new Error(data.error || 'Failed to add location to favorites.');
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Token ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to add location to favorites.');
+    }
+    throw error;
   }
 };
 
 export const removeFromFavorites = async (city_name: string, country_code: string, latitude: number, longitude: number) => {
   const token = getAuthToken();
   if (!token) throw new Error('User is not authenticated. Please log in.');
-  const response = await fetch(`${BASE_URL}/favorites/`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Token ${token}`,
-    },
-    body: JSON.stringify({
-      city_name,
-      country_code,
-      latitude,
-      longitude,
-    }),
-  });
-  const data = await response.json();
-  if (response.status === 200) {
-    return data;
-  } else {
-    throw new Error(data.error || 'Failed to remove location from favorites.');
+  try {
+    const response = await axios.delete(`${BASE_URL}/favorites/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Token ${token}`,
+      },
+      data: {
+        city_name,
+        country_code,
+        latitude,
+        longitude,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to remove location from favorites.');
+    }
+    throw error;
   }
 };
 
@@ -254,22 +257,23 @@ export const fetchAlerts = async (location?: string): Promise<any[]> => {
     ? `${BASE_URL}/alerts/?location=${encodeURIComponent(location)}`
     : `${BASE_URL}/alerts/`;
   try {
-    const response = await fetch(url, {
+    const response = await axios.get(url, {
       headers: {
         Authorization: `Token ${token}`,
         'Content-Type': 'application/json',
       },
     });
-    if (response.status === 404) {
-      return [];
-    }
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to fetch alerts.');
-    }
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error("Error fetching alerts:", error);
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        return [];
+      }
+      if (error.response?.data) {
+        throw new Error(error.response.data.error || 'Failed to fetch alerts.');
+      }
+    }
     return [];
   }
 };

@@ -1,17 +1,17 @@
-export const apiRequest = async (url: string, options?: RequestInit) => {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error' };
-      }
+import axios, { AxiosRequestConfig } from 'axios';
 
-      throw errorData;
+export const apiRequest = async (url: string, options?: AxiosRequestConfig) => {
+  try {
+    const response = await axios(url, options);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw error.response.data;
+    } else {
+      throw { error: 'Unknown error' };
     }
-    return response.json();
-  };
+  }
+};
   
   
   export const buildUrl = (baseUrl: string, endpoint: string, params: Record<string, any>) => {

@@ -9,7 +9,7 @@ export const loginUser = async (username: string, password: string) => {
   const data = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    data: { username, password },
   });
   sessionStorage.setItem('auth_token', data.token);
   return data;
@@ -28,7 +28,7 @@ export const registerUser = async (
   const data = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    data: {
       username,
       email,
       password,
@@ -36,7 +36,7 @@ export const registerUser = async (
       preferred_temperature_unit: preferredTemperatureUnit,
       first_name: firstName || '',
       last_name: lastName || '',
-    }),
+    },
   });
   return data;
 };
@@ -56,6 +56,7 @@ export const logoutUser = async () => {
   await apiRequest(buildUrl(BASE_URL, '/logout/', {}), {
     method: 'POST',
     headers: { Authorization: `Token ${token}` },
+    data: {},
   });
   sessionStorage.removeItem('auth_token');
 };
@@ -77,7 +78,7 @@ export const updateUserProfile = async (profileData: {
       'Content-Type': 'application/json',
       Authorization: `Token ${token}`,
     },
-    body: JSON.stringify(profileData),
+    data: profileData,
   });
 };
 
@@ -91,7 +92,7 @@ export const deleteUserAccount = async (email: string) => {
       'Content-Type': 'application/json',
       Authorization: `Token ${token}`,
     },
-    body: JSON.stringify({ email }),
+    data: { email },
   });
   sessionStorage.removeItem('auth_token');
   return data;

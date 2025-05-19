@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { updateUserProfile, fetchUserProfile } from '../api/user'; 
+import { updateUserProfile, fetchUserProfile } from '../api/user';
+import axios from 'axios'; 
 import '../css/NavBar.css';
 import logo from '../img/logo_main2.svg';
 import searchIcon from '../img/search-icon.svg';
@@ -67,20 +68,22 @@ const NavBar: React.FC<NavBarProps> = ({
   };
 
   const handleLogout = async () => {
-    const response = await fetch(`${import.meta.env.VITE_BASE_USER_URL}/logout/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Token ${sessionStorage.getItem('auth_token')}`,
-      },
-    });
-
-    const data = await response.json();
-    if (response.status === 200) {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_USER_URL}/logout/`, {}, {
+        headers: {
+          Authorization: `Token ${sessionStorage.getItem('auth_token')}`,
+        },
+      });
+      
       sessionStorage.removeItem('auth_token');
-      alert(data.message);
+      alert(response.data.message);
       window.location.href = '/';
-    } else {
-      alert(data.error || 'Failed to log out.');
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data) {
+        alert(error.response.data.error || 'Failed to log out.');
+      } else {
+        alert('Failed to log out.');
+      }
     }
   };
 
