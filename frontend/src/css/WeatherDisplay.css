@@ -145,3 +145,18 @@
     flex-direction: column;
   }
 }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .weather-info {
+    flex: none;
+    display: block; /* Override var(--wd-info-display) */
+  }
+}
+
+/* Styles for iPad Pro Portrait-like width */
+@media (width: 1024px) {
+  .weather-info {
+    flex: none;
+    display: block; /* Override var(--wd-info-display) */
+  }
+}

@@ -13,7 +13,7 @@
   --wd-icon-size: clamp(80px, 10vw, 110px);
   --wd-description-font-size: clamp(1.5rem, 2vw, 1.8rem);
   --wd-details-font-size: clamp(0.8rem, 1.5vw, 1rem);
-  --wd-border-radius: 0px:
+  --wd-border-radius: 0px;
 
   /* ForecastDisplay default (two-column layout) */
   --fd-height: 100%;
@@ -290,5 +290,110 @@
   .card.left-bottom {
     height: 50vh;
     min-height: 15rem; /* Set this to whatever minimum works for your design */
+  }
+}
+
+/* Landscape Adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* For very short screens in landscape (like phones) */
+
+  .home-page {
+    /* Allow for scrolling if content overflows vertically */
+    height: auto;
+    min-height: 100vh; /* Ensure it still tries to fill viewport but can grow */
+  }
+
+  .logged-in-layout {
+    grid-template-columns: 1fr 1fr; /* Keep two columns */
+    grid-template-rows: minmax(150px, 1fr) minmax(150px, 1fr); /* More stable row heights */
+    padding: 0.5rem; /* Reduce padding */
+    gap: 0.5rem;     /* Reduce gap */
+  }
+
+  .card {
+    min-height: 150px; /* Give cards a minimum height but allow them to shrink */
+    padding: 0.5rem;
+    display: flex; /* Added to help manage internal content flow */
+    flex-direction: column; /* Added */
+    overflow: hidden; /* Prevent content from visually spilling out, works with internal scroll */
+  }
+
+  /* Specific adjustments for map card content */
+  .card .map-controls-container { /* Assuming this class for Temp, Wind etc. buttons */
+    margin-bottom: 0.25rem;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+  }
+  .card .map-controls-container button {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    margin-right: 0.2rem; /* Add some spacing between buttons */
+  }
+
+  .card .leaflet-container { /* Targeting Leaflet map */
+    min-height: 100px; /* Set a minimum height */
+    flex-grow: 1; /* Allow map to take remaining space if card is flex */
+    width: 100%; /* Ensure it takes card width */
+  }
+
+  /* Specific adjustments for news card content */
+  .card .news-content-area { /* Assuming this class for the news text area */
+    font-size: 0.75rem;
+    padding: 0.25rem;
+    max-height: 100px;  /* Max height for news before scrolling */
+    min-height: 70px; /* Add min-height to prevent collapse when empty */
+    overflow-y: auto;   /* Allow scroll if too much news content */
+    flex-grow: 1; /* Allow news area to take space */
+    word-wrap: break-word; /* Ensure long words break */
+  }
+  .card .news-content-area p {
+    margin-bottom: 0.3rem;
+  }
+  
+  /* Adjust variables for even smaller sizes if needed for landscape phones */
+  .logged-in-active {
+    --wd-padding: clamp(5px, 1vw, 8px);
+    --wd-header-font-size: clamp(1rem, 1.5vw, 1.2rem);
+    --wd-temp-font-size: clamp(1.5rem, 2.2vw, 2rem);
+    --wd-icon-size: clamp(40px, 6vw, 50px);
+    --wd-description-font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+    --wd-details-font-size: clamp(0.6rem, 0.8vw, 0.8rem);
+    --wd-border-radius: 20px;
+
+    /* Forecast Display Variables for Landscape (Small Height) */
+    --fd-padding: clamp(3px, 0.8vw, 6px); /* Reduce padding */
+    --fd-header-font-size: clamp(0.8rem, 1vw, 1rem); /* Smaller header */
+    --fd-forecast-tab-font-size: clamp(0.45rem, 0.7vw, 0.6rem); /* Smaller tabs */
+    --fd-forecast-item-font-size: clamp(0.4rem, 0.7vw, 0.55rem); /* Smaller item text */
+    --fd-row-temp-font-size: clamp(0.6rem, 1vw, 0.8rem); /* Smaller temp text */
+    --fd-border-radius: 15px; /* Slightly smaller border radius */
+    
+    /* Potentially adjust widths if elements are still too wide. These are from root, may need overrides here. */
+    /* --fd-row-time-width: clamp(40px, 7vw, 50px); */ 
+    /* --fd-row-icon-width: clamp(100px, 12vw, 150px); */
+    /* --fd-row-desc-width: clamp(100px, 12vw, 150px); */
+    --fd-row-desc-font-size: clamp(0.6rem, 1vw, 0.75rem); /* Explicitly smaller description font */
+  }
+
+  .two-column-layout {
+    /* Already stacks at 768px, ensure components within are compact */
+    padding: 0.5rem;
+  }
+  
+  .footer {
+    font-size: 0.6rem;
+    padding: 0.2rem;
+  }
+}
+
+/* For wider landscape screens like tablets, adjustments might be different */
+@media (orientation: landscape) and (min-width: 769px) and (max-height: 800px) {
+  /* Example: If iPad Pro landscape (1024px height) still needs adjustment
+     but the above (max-height: 500px) is too aggressive.
+     Often, the default tablet media queries might suffice,
+     but this is a placeholder if specific landscape tablet issues arise.
+  */
+  .logged-in-layout {
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
 }

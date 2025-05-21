@@ -36,3 +36,74 @@
     padding: 0.9375rem; /* 15px */
   }
 }
+
+/* Landscape and small height adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  .modal-content { /* Corrected from .profile-modal */
+    max-width: 90vw;         /* Limit width to 90% of viewport width */
+    max-height: 85vh;        /* Limit height to 85% of viewport height */
+    padding: 1rem;           /* Reduce padding */
+    overflow-y: auto;        /* Allow vertical scrolling for modal content */
+  }
+
+  .modal-content h2 { /* Corrected from .profile-modal h2 */
+    font-size: 1.2rem;       /* Reduce header font size */
+    margin-bottom: 0.75rem;  /* Reduce margin */
+  }
+
+  .modal-content .form-group { /* Corrected */
+    margin-bottom: 0.5rem;   /* Reduce margin between form groups */
+  }
+
+  .modal-content label { /* Corrected */
+    font-size: 0.8rem;       /* Reduce label font size */
+    margin-bottom: 0.15rem;
+  }
+
+  .modal-content input[type="email"],
+  .modal-content input[type="text"],
+  .modal-content input[type="password"] { /* Corrected */
+    padding: 0.4rem 0.6rem;  /* Reduce input padding */
+    font-size: 0.85rem;      /* Reduce input font size */
+  }
+
+  .modal-content .preferred-unit-container { /* Corrected */
+    margin-bottom: 0.75rem;  /* Adjust margin */
+    align-items: center; /* Ensure alignment is good */
+  }
+
+  .modal-content .preferred-unit-container label { /* Corrected */
+    font-size: 0.8rem; /* Match other labels */
+    margin-right: 0.5rem;
+  }
+
+  /* Adjust switch size if you have custom switch styles, otherwise it might be browser default */
+  /* .modal-content .switch { ... } */
+
+  .modal-content .save-changes-button,
+  .modal-content .delete-account-button { /* Corrected */
+    padding: 0.5rem 0.8rem;  /* Reduce button padding */
+    font-size: 0.8rem;       /* Reduce button font size */
+    margin-top: 0.75rem;
+  }
+
+  .modal-content .delete-account-button { /* Corrected */
+    margin-top: 0.5rem; /* Reduce top margin if buttons stack */
+  }
+  
+  .modal-content .error-message { /* Corrected */
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Additional adjustments for very narrow landscape screens if needed */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 700px) {
+  .modal-content { /* Corrected */
+    padding: 0.75rem;
+  }
+  .modal-content h2 { /* Corrected */
+    font-size: 1.1rem;
+  }
+  /* Further fine-tuning can be added here if the 932x430 still has minor issues */
+}

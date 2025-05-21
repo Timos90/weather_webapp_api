@@ -8,12 +8,17 @@
   background: linear-gradient(to top left, #74ebd5, #acb6e5);
   font-family: 'Roboto', sans-serif;
   color: #fff;
+  display: flex;
+  flex-direction: column;
 }
 
 .news-display.no-news {
   text-align: center;
   font-size: 1.2rem;
   padding: 2.5rem; /* 40px -> 2.5rem */
+  margin-bottom: 0.5rem; /* 8px -> 0.5rem */
+  text-shadow: 0.0625rem 0.0625rem 0.25rem rgba(0,0,0,0.3); /* 1px -> 0.0625rem, 4px -> 0.25rem */
+  flex-shrink: 0; /* Prevent heading from shrinking */
 }
 
 /* Heading styling */
@@ -25,7 +30,32 @@
 }
 
 /* Slider container override */
-.news-slider { margin: 0 auto; }
+.news-slider {
+  width: 100%; /* Ensure it takes full available width within padding */
+  flex-grow: 1; /* Allow slider to take up remaining vertical space */
+  min-height: 0; /* Important for flex children that need to shrink or contain scrollable content */
+}
+
+/* Ensure slick carousel internal structure also takes full height */
+.news-slider .slick-list,
+.news-slider .slick-track {
+  height: 100%;
+}
+
+/* Ensure individual slides take full height and allow content to fill */
+.news-slider .slick-slide {
+  height: 100%;
+  display: flex; /* Allow .news-card to use height: 100% effectively */
+  flex-direction: column; /* Align .news-card within the slide */
+}
+
+/* Ensure intermediate div wrapper inside .slick-slide also takes full size */
+.news-slider .slick-slide > div {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Each news card with glassmorphic effect */
 .news-card {
@@ -41,10 +71,9 @@
   transition: transform 0.3s ease, background 0.3s ease;
   overflow: hidden;
   margin: 0;
-  margin-bottom: -0.35rem;
   padding: 0 0.25rem 0 0.25rem; /* 4px -> 0.25rem */
-  width: 18.75rem; /* 300px -> 18.75rem */
-  height: 17.9rem; /* 280px -> 17.5rem */
+  width: 100%;
+  height: 100%;
 }
 
 .news-card:hover {
@@ -54,8 +83,9 @@
 
 .news-image-container {
   width: 100%;
-  height: 53.57%; /* 150px out of 280px */
+  height: 60%; /* Make image take half the card height */
   overflow: hidden;
+  flex-shrink: 0; /* Prevent image container from shrinking */
 }
 
 .news-image {
@@ -64,9 +94,33 @@
   object-fit: cover;
 }
 
-.news-details { padding: 1.5625rem; /* 25px -> 1.5625rem */ }
-.news-title { font-size: 1.1rem; }
-.news-date { font-size: 0.9rem; color: #645e5e; }
+.news-details {
+  padding: 0.75rem; /* Adjusted padding */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Helps push date to bottom if title is short */
+  flex-grow: 1; /* Allow details section to take remaining space */
+  overflow: hidden; /* Hide overflow for this section too */
+}
+
+.news-title {
+  font-size: 1rem; /* Slightly smaller font */
+  margin-bottom: 0.25rem; /* Space between title and date */
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Allow up to 3 lines */
+  line-clamp: 3; /* Standard property for forward compatibility */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-height: 3.6em; /* line-height * number of lines (1.2 * 3) */
+}
+
+.news-date {
+  font-size: 0.8rem; /* Slightly smaller font */
+  color: #f0f0f0; /* Lighter color for better contrast */
+  margin-top: auto; /* Push date to the bottom */
+}
 
 /* Responsive adjustments */
 @media only screen and (max-width: 30rem) {

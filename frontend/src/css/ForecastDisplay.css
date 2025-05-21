@@ -5,6 +5,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   border-radius: var(--fd-border-radius);
   padding: var(--fd-padding);
   background: var(--fd-background);
@@ -21,9 +22,9 @@
   backdrop-filter: blur(0.5rem); /* 8px */
   padding: 1.875rem; /* 30px */
   text-align: center;
-  max-width: 45rem; /* 720px */
-  width: 100%;
-  height: 100%;
+  /* max-width: 45rem; */ /* 720px */
+  width: 90%;
+  height: 90%;
   color: #fff;
   overflow-y: auto;
   overflow-x: hidden;
@@ -43,6 +44,7 @@
 .forecast-tabs {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--fd-gap);
   margin-bottom: 1.25rem; /* 20px */
 }
@@ -87,18 +89,18 @@
 /* Each forecast item row styling */
 .forecast-item {
   position: relative;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.25); /* Consider changing to #e0f2f7 or similar light blue from image */
   border-radius: 0.625rem; /* 10px */
   box-shadow: 0 0.25rem 0.75rem rgba(31, 38, 135, 0.3); /* 4px, 12px */
   backdrop-filter: blur(0.5rem); /* 8px */
-  padding: var(--fd-forecast-item-padding);
-  width: 95%;
-  height: 90%;
-  max-width: 42.5rem; /* 680px */
+  padding: 0.4rem 0.75rem; /* Adjusted for compactness */
+  width: 100%; /* Take full width of .forecast-items container */
+  height: auto; /* Height based on content */
+  max-width: 42.5rem; /* This might be better on .forecast-items or .forecast-card */
   display: flex;
   align-items: center;
   font-size: var(--fd-forecast-item-font-size);
-  color: #5f5959;
+  color: #333; /* Darker text to match image, was #5f5959 */
   cursor: pointer;
   transition: background 0.3s ease;
 }
@@ -114,34 +116,35 @@
 /* Use a grid layout inside each row to enforce uniform column widths */
 .row-summary {
   display: grid;
-  grid-template-columns: var(--fd-row-time-width) var(--fd-row-temp-width) var(--fd-row-icon-width) var(--fd-row-desc-width) var(--fd-row-expand-width);
+  grid-template-columns: auto auto 2rem auto auto; /* Time, Temp, Icon, Desc (auto), Expand (auto) */
   align-items: center;
-  justify-content: space-evenly;
-  gap: var(--fd-gap);
+  justify-content: space-between; /* Distribute columns evenly */
+  gap: 0.3rem;
   width: 100%;
-  white-space: nowrap;
 }
 
 .row-time {
   font-weight: bold;
-  text-align: center;
+  text-align: left; /* As per image */
 }
 
 .row-temp {
   font-size: var(--fd-row-temp-font-size);
   font-weight: bold;
-  text-align: center;
+  text-align: left; /* As per image */
 }
 
 .row-icon {
-  width: var(--fd-row-icon-width);
+  width: 100%; /* Fill its grid cell */
+  height: 100%; /* Fill its grid cell */
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .row-icon img {
-  width: 2.5rem; /* 40px */
-  height: 2.5rem; /* 40px */
+  width: 1.5rem; /* Smaller icon */
+  height: 1.5rem; /* Smaller icon */
   transition: transform 0.3s ease;
 }
 
@@ -150,16 +153,20 @@
 }
 
 .row-desc {
-  width: var(--fd-row-desc-width);
   font-size: var(--fd-row-desc-font-size);
   text-transform: capitalize;
-  padding: 0 0.625rem; /* 10px */
+  padding: 0 0.3rem; /* Reduced padding */
+  white-space: normal; /* Allow description to wrap */
+  text-align: left; /* Ensure description is left-aligned */
+  min-width: 0; /* Important for grid items that might get squished */
+  max-width: 10rem; /* Constrain width for 'auto' column sizing with space-evenly */
 }
 
 .row-expand-label {
-  width: var(--fd-row-expand-width);
-  font-size: 1rem;
+  font-size: 1rem; /* Keep or adjust icon size */
   text-align: center;
+  justify-self: end; /* Align to the end of its grid cell */
+  padding-left: 0.5rem; /* Add some space before the arrow */
 }
 
 /* Overlay for expanded details (appears below the row) */
@@ -184,6 +191,36 @@
 @keyframes fadeInOverlay {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Tablet and larger screen adjustments (portrait/general) */
+@media only screen and (min-width: 768px) {
+  .row-summary {
+    grid-template-columns: max-content max-content 3rem auto auto;
+    /* Default gap from base style should be fine, or adjust: gap: var(--fd-gap, 0.5rem); */
+    /* Ensure white-space: normal is on .row-desc, not here directly if it causes issues elsewhere */
+  }
+
+  .row-summary > * {
+    min-width: 0;
+  }
+
+  .row-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 3rem;
+    max-width: 3rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* The img inside .row-icon uses default width of 2.5rem, which should fit well in a 3rem container */
+  }
+
+  .row-desc {
+    white-space: normal;
+    word-break: break-word;
+    /* Default font size and padding from base styles should be okay, or adjust if needed */
+  }
 }
 
 /* Responsive adjustments remain similar; you can update fixed values in :root if needed */
@@ -214,10 +251,126 @@
     font-size: 0.8rem;
   }
   .row-summary {
-    grid-template-columns: 50px 60px 100px 100px 30px;
-    gap: 0.5rem;
+    grid-template-columns: auto auto 1.5rem auto auto;
+    justify-content: space-between; /* Ensure consistent justification */
+    gap: 0.25rem;
+  }
+
+  .row-icon img {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .row-desc {
+    max-width: 7rem; /* Smaller max-width for narrower container */
+    /* Potentially adjust padding or font-size further if needed for very small */
+  }
+}
+
+/* Landscape adjustments for small height screens */
+@media (orientation: landscape) and (max-height: 500px) {
+  .forecast-display {
+    /* Ensure padding is minimal if not already handled by variables in HomePage.css */
+    padding: var(--fd-padding, 0.5rem); 
+    height: 100%; /* Ensure forecast-display itself fills the card from HomePage.css */
+  }
+
+  /* Ensure .forecast-card is a flex container to allow .forecast-items to grow */
+  .forecast-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Take full height of .forecast-display */
+    overflow: hidden; /* Remove its own scroll, children will handle it */
+    /* other existing styles like background, padding etc. should be fine */
+  }
+
+  .forecast-header h2 {
+    font-size: var(--fd-header-font-size, 1rem); /* Use variable or a smaller fixed size */
+    margin-bottom: 0.5rem;
+  }
+
+  .forecast-tabs {
+    gap: var(--fd-gap, 0.3rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .forecast-tab {
+    padding: 0.3rem 0.5rem;
+    font-size: var(--fd-forecast-tab-font-size, 0.6rem);
+    min-width: auto; /* Allow tabs to be smaller */
+  }
+
+  .forecast-tab-date {
+    font-size: clamp(0.4rem, 1vw, 0.5rem); /* Even smaller date */
+  }
+
+  .forecast-items {
+    gap: 0.3rem; /* Reduce gap between items */
+    overflow-y: auto; /* Enable scrolling for forecast items */
+    flex-grow: 1; /* Allow this to take available vertical space */
+    min-height: 0; /* Good practice for scrollable flex children */
+    width: 100%;   /* Ensure it takes full width */
+    padding-right: 0.3rem; /* Space for scrollbar if it appears */
+  }
+
+  .forecast-item {
+    padding: var(--fd-forecast-item-padding, 0.3rem 0.5rem); /* Reduce padding */
+    height: auto !important; /* Override previous 90% height, let content define it */
+    width: 100%; /* Take full width of .forecast-items scroll container */
+  }
+
+  .row-summary {
+    /* Override grid columns for more compact layout */
+    grid-template-columns: auto auto 2rem auto auto; /* Time(max-content) | Temp(max-content) | Icon(fixed) | Desc(flex) | Expand(auto) */
+    justify-content: space-between; /* Ensure consistent justification */
+    gap: var(--fd-gap, 0.1rem);
+    white-space: normal; /* Allow text to wrap */
+    align-items: center; /* Vertically align items */
+  }
+
+  /* Allow grid items in .row-summary to shrink further */
+  .row-summary > * {
+    min-width: 0;
+  }
+
+  .row-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2rem; /* Explicitly set width */
+    max-width: 2rem; /* Explicitly set max-width */
+    box-sizing: border-box; /* Ensure padding/border are included in width */
+    overflow: hidden; /* Clip if something still tries to overflow */
+  }
+
+  .row-time,
+  .row-temp {
+    font-size: var(--fd-forecast-item-font-size, 0.6rem); /* Match general item font size */
   }
   .row-temp {
-    font-size: 0.9rem;
+    font-size: var(--fd-row-temp-font-size, 0.7rem);
   }
+
+  .row-icon img {
+    width: 1.5rem; /* Smaller icon */
+    height: 1.5rem;
+  }
+
+  .row-desc {
+    font-size: var(--fd-row-desc-font-size, 0.65rem); /* Use variable or smaller fixed */
+    white-space: normal; /* Ensure wrapping */
+    word-break: break-word; /* Break long words if necessary */
+    text-transform: capitalize;
+    padding: 0 0.2rem;
+    line-height: 1.2; /* Adjust line height for wrapped text */
+    max-width: 10rem; /* Constrain width for 'auto' column sizing with space-evenly */
+  }
+  
+  .row-expand-label {
+    font-size: 0.8rem; /* Smaller expand icon/label */
+  }
+
+  /* The following .forecast-item.expanded .forecast-overlay styles were removed as overlay was fine previously */
+  /* .forecast-item.expanded .forecast-overlay { ... } */
+  /* .forecast-item.expanded .forecast-overlay .overlay-details { ... } */
 }

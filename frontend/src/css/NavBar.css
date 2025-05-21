@@ -207,7 +207,6 @@
   cursor: pointer;
   font-size: 1rem; /* 16px */
   transition: background-color 0.3s ease;
-  white-space: nowrap;
 }
 
 .login-button {
@@ -246,47 +245,159 @@
   background-color: #9e9e9e;
 }
 
+/* Dedicated styles for iPad Pro / Wider Tablets (769px to 1024px) */
+@media only screen and (min-width: 48.0625rem) and (max-width: 64rem) {
+  .navbar {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.5rem 1rem; /* Adjust padding for wider view */
+    display: flex; /* Override grid, establish flex layout */
+    align-items: center;
+    gap: 0.5rem; /* Base gap between direct children */
+  }
+
+  /* Reset grid-specific properties for direct children of .navbar */
+  .navbar > .logo,
+  .navbar > .search-container,
+  .navbar > .location-and-favorite,
+  .navbar > .unit-switch-container,
+  .navbar > .auth-buttons {
+    grid-column: auto; /* Reset */
+    grid-row: auto;    /* Reset */
+    justify-self: auto;/* Reset */
+    align-self: center;/* Align all items vertically in the flex line */
+    margin: 0; /* Reset any grid-context margins */
+  }
+
+  .logo {
+    flex-shrink: 0; /* Prevent logo from shrinking */
+    margin-right: auto; /* Push all subsequent items to the right */
+  }
+    /* .logo-image default styles apply */
+
+  .search-container {
+    /* flex-grow: 1; /* Uncomment if search should fill available space */
+    /* max-width: 350px; /* Optional: constrain search width */
+    margin-left: 1rem; /* Ensure some space if logo is only element to left */
+    margin-right: 1rem; /* Space before the next group of items */
+  }
+    /* .search-input default styles apply, adjust if needed: */
+    /* .search-input { font-size: 0.9rem; padding: 0.4rem 0.8rem; } */
+
+  .location-and-favorite {
+    display: flex; /* Ensure internal items are flexed */
+    align-items: center;
+    gap: 0.75rem;
+    margin-right: 1rem; /* Space before unit switch */
+  }
+    .current-location {
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .favorite-button {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+  .unit-switch-container {
+    margin-right: 1rem; /* Space before auth buttons */
+    /* Default display from base styles should be fine */
+  }
+
+  .auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap; /* Aim for single line */
+  }
+    .auth-buttons button { /* Target all buttons within .auth-buttons */
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+}
+
 /* Responsive adjustments */
 @media only screen and (max-width: 48rem) { /* 768px */
   .navbar {
     max-width: 100%;
+    width: 100%; 
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: auto 1fr; 
     grid-template-rows: auto auto auto;
-    gap: 0.625rem; /* 10px */
-    justify-items: center;
-    align-items: center;
+    gap: 0.5rem; 
+    column-gap: 0.5rem;
+    padding: 0.5rem;
+    margin-left: 0 !important; /* Restored !important */
+    margin-right: 0 !important; /* Restored !important */
   }
+
   .logo {
     grid-column: 1 / 2;
     grid-row: 1 / 2;
+    justify-self: start; /* Align logo to the start of its cell */
+    margin-right: 0; /* Reset margin as grid handles spacing */
   }
+
   .search-container {
-    grid-column: 2 / 3;
+    grid-column: 2 / 3; /* Span remaining columns */
     grid-row: 1 / 2;
-    width: 100%;
-    max-width: 100%;
+    justify-self: end; /* Align to the end of its cell */
+    max-width: 100%; /* Ensure it doesn't overflow its cell */
   }
+
+  /* Center location and favorite, span full width */
   .location-and-favorite {
     grid-column: 1 / 3;
     grid-row: 2 / 3;
     justify-content: center;
+    gap: 1rem; /* Increased gap */
+    align-items: center;
   }
+
+  .current-location {
+    font-size: 1.1rem; /* Increased font size */
+  }
+
+  .favorite-button {
+    padding: 0.6rem 1rem; /* Increased padding */
+    font-size: 0.7rem; /* Increased font size */
+  }
+
   .unit-switch-container {
     grid-column: 1 / 2;
     grid-row: 3 / 4;
-    justify-self: start;
-    width: 100%;
+    justify-self: start; /* Align to the start */
+    width: auto; /* Let it size to content */
+    margin-left: 0;
   }
+
   .auth-buttons {
     grid-column: 2 / 3;
     grid-row: 3 / 4;
-    justify-self: end;
-    justify-content: right;
-    width: 100%;
+    gap: 0.5rem; /* Reduced gap */
+    flex-wrap: wrap; /* Allow buttons to wrap */
+    justify-content: flex-end; /* Align wrapped items to the end */
+    align-items: center; /* Align items nicely if they wrap */
+    max-width: 100%; /* Ensure container respects grid cell */
+    flex: initial; /* Override base flex behavior */
+    min-width: 0; /* Allow container to shrink */
+  }
+
+  .login-button,
+  .register-button,
+  .profile-button,
+  .logout-button {
+    padding: 0.5rem 0.8rem; /* Reduced padding */
+    font-size: 0.85rem; /* Reduced font size */
+    min-width: 0; /* Allow shrinking below intrinsic content size */
   }
 }
 
+/* Smaller screen adjustments (e.g., mobile portrait) */
 @media only screen and (max-width: 30rem) { /* 480px */
   .logo-image {
     height: 2.7625rem; /* 25px */
@@ -298,5 +409,52 @@
   .auth-buttons button {
     font-size: 0.75rem; /* 12px */
     padding: 0.25rem 0.375rem; /* 4px 6px */
+  }
+}
+
+/* Landscape Adjustments */
+@media (orientation: landscape) and (max-height: 450px) {
+  .navbar {
+    padding: 0.25rem 0.5rem; /* Reduce vertical padding */
+    gap: 0.25rem; /* Reduce gaps if grid is active */
+  }
+
+  .logo-image {
+    height: 2.5rem; /* Smaller logo */
+  }
+
+  .search-input {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .current-location {
+    font-size: 0.85rem;
+  }
+
+  .favorite-button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.55rem;
+  }
+  
+  .unit-label-left,
+  .unit-label-right {
+    font-size: 0.9rem;
+  }
+
+  .login-button,
+  .register-button,
+  .profile-button,
+  .logout-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* If using the grid layout from the 768px breakpoint */
+  @media (max-width: 48rem) { /* Apply these within the landscape, if 768px styles are active */
+     .location-and-favorite {
+        flex-direction: row; /* Keep side-by-side if space allows, already default */
+        gap: 0.3rem;
+     }
   }
 }
