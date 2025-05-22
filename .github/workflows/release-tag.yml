@@ -26,8 +26,10 @@ jobs:
       - name: Get latest tag
         id: get_latest_tag
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          git fetch --tags --force # Fetch all tags from remote, overwrite local if they conflict
+          LATEST_TAG=$(git tag -l "v*.*.*" --sort=-v:refname | head -n 1 2>/dev/null || echo "v0.0.0")
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          echo "Fetched latest tag: $LATEST_TAG"
 
       - name: Calculate next version
         id: bump_version
