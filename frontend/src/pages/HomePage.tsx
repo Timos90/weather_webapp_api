@@ -17,15 +17,17 @@ import AlertsButton from '../components/AlertsButton';
 import UserProfile from '../components/UserProfileDisplay';
 import MapComponent from '../components/MapComponent';
 import GeolocationPrompt from '../components/GeolocationPrompt';
+import OutfitAdvisor from '../components/OutfitAdvisor';
 import '../css/HomePage.css';
-import { ForecastItem, NewsArticle } from '../types/types';
+import { ForecastItem, NewsArticle, APICurrentWeather, ForecastSlot, GenderOption } from '../types/types';
+import { WeatherData } from '../services/outfitSuggester';
 
 const ProfileModal = lazy(() => import('../components/ProfileModal'));
 
 const HomePage = () => {
   const [location, setLocation] = useState('');
   const prevLocation = useRef('');
-  const [currentWeather, setCurrentWeather] = useState<any>(null);
+  const [currentWeather, setCurrentWeather] = useState<APICurrentWeather | null>(null);
   const [forecast, setForecast] = useState<ForecastItem[]>([]);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [lat, setLat] = useState<number>();
@@ -37,8 +39,62 @@ const HomePage = () => {
   const isAuthenticated = Boolean(sessionStorage.getItem('auth_token'));
   const [unit, setUnit] = useState<'C' | 'F'>('C');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAdviceModal, setShowAdviceModal] = useState(false);
+  const [userGender, setUserGender] = useState<GenderOption | undefined>();
 
   const unitToParam = (u: 'C' | 'F') => (u === 'F' ? 'imperial' : 'metric');
+
+  const mapCurrentToWeatherData = (apiData: APICurrentWeather | null): WeatherData | undefined => {
+    if (!apiData) return undefined;
+    let uvFromTodayForecast: number | undefined = undefined;
+    if (forecast && forecast.length > 0 && forecast[0].day_name === "Today") {
+      uvFromTodayForecast = forecast[0].uv_index;
+    }
+
+    return {
+      feelsLike: apiData.main.feels_like,
+      temperature: apiData.main.temp,
+      weatherMain: apiData.weather[0]?.main,
+      weatherDescription: apiData.weather[0]?.description,
+      uvIndex: uvFromTodayForecast,
+      windSpeed: apiData.wind.speed,
+      isDay: apiData.dt > apiData.sys.sunrise && apiData.dt < apiData.sys.sunset,
+      datetime: new Date(apiData.dt * 1000).toISOString(),
+    };
+  };
+
+  const mapForecastSlotToWeatherData = (slot: ForecastSlot, dailyData: ForecastItem): WeatherData | undefined => {
+    if (!slot) return undefined;
+    const slotDateTime = new Date(slot.datetime).getTime();
+    const getTimestampFromTimeString = (timeStr: string | undefined, slotDate: Date): number | undefined => {
+      if (!timeStr) return undefined;
+      const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+      const dateWithTime = new Date(slotDate);
+      dateWithTime.setHours(hours, minutes, seconds, 0);
+      return dateWithTime.getTime();
+    };
+
+    const slotDateObject = new Date(slot.datetime);
+    const sunriseTimestamp = getTimestampFromTimeString(dailyData.sunrise, slotDateObject);
+    const sunsetTimestamp = getTimestampFromTimeString(dailyData.sunset, slotDateObject);
+
+    let isDayInSlot = false;
+    if (sunriseTimestamp && sunsetTimestamp) {
+      isDayInSlot = slotDateTime > sunriseTimestamp && slotDateTime < sunsetTimestamp;
+    }
+
+    return {
+      feelsLike: slot.feels_like,
+      temperature: slot.temperature,
+      weatherMain: slot.weather_main,
+      weatherDescription: slot.weather_description,
+      uvIndex: dailyData.uv_index,
+      windSpeed: slot.wind_speed,
+      isDay: isDayInSlot,
+      precipitationChance: slot.pop,
+      datetime: slot.datetime,
+    };
+  };
 
   const handleUserGeo = () => {
     const userPref: 'C' | 'F' = unit;
@@ -79,8 +135,11 @@ const HomePage = () => {
           const profile = await fetchUserProfile();
           userPref = profile.preferred_temperature_unit === 'F' ? 'F' : 'C';
           setUnit(userPref);
+          if (profile.gender) {
+            setUserGender(profile.gender as GenderOption);
+          }
         } catch (err) {
-          console.error('Could not fetch user profile for unit:', err);
+          console.error('Could not fetch user profile for unit and gender:', err);
         }
       }
     };
@@ -214,6 +273,10 @@ const HomePage = () => {
     setLayer(newLayer);
   };
 
+  const handleProfileGenderChange = (newGender: GenderOption) => {
+    setUserGender(newGender);
+  };
+
   return (
     <div className={`home-page ${isAuthenticated ? 'logged-in-active' : ''}`}>
       <div className="top-bar">
@@ -246,8 +309,17 @@ const HomePage = () => {
           />
         )}
       </div>
-      {isAuthenticated ? (
+      {isAuthenticated && (currentWeather || forecast) ? (
         <div className="logged-in-layout">
+          {/* Floating Outfit Advice Button - Placed here */}
+          {!showAdviceModal && isAuthenticated && currentWeather && (
+            <button 
+              onClick={() => setShowAdviceModal(true)} 
+              className="floating-advice-button"
+            >
+              ✨ Advice
+            </button>
+          )}
           <div className="card left-top mobile-first">
             {error && <div className="error-message">{error}</div>}
             {currentWeather && (
@@ -295,18 +367,46 @@ const HomePage = () => {
       {showProfileModal && (
         <Suspense fallback={<div>Loading...</div>}>
           <ProfileModal onClose={() => setShowProfileModal(false)}>
-            <UserProfile
+            <UserProfile 
               onFavoriteClick={(favLoc: string) => {
                 handleSearch(favLoc);
                 setShowProfileModal(false);
               }}
               onFavoriteUpdated={refetchFavorites}
+              onProfileDataChange={handleProfileGenderChange}
             />
           </ProfileModal>
         </Suspense>
       )}
+      {/* Advice Modal */}
+      {showAdviceModal && isAuthenticated && (
+        <div className="advice-modal-overlay" onClick={() => setShowAdviceModal(false)}>
+          <div className="advice-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowAdviceModal(false)} className="advice-modal-close-button">
+              &times;
+            </button>
+            <h2>Outfit & Activity Advice</h2>
+
+            {/* Single OutfitAdvisor component call */}
+            <OutfitAdvisor
+              currentWeatherAdvice={currentWeather ? mapCurrentToWeatherData(currentWeather) : undefined}
+              forecastAdvice={forecast
+                .slice(0, 5) // Show up to 5 days of forecast
+                .map(daily => ({
+                  dayName: daily.day_name,
+                  slots: daily.forecasts // Use 'forecasts'
+                    // Removed the time filter to include all hours
+                    .map(slot => mapForecastSlotToWeatherData(slot, daily))
+                    .filter(Boolean) as WeatherData[]
+                }))}
+              onClose={() => setShowAdviceModal(false)}
+              userGender={userGender}
+            />
+          </div>
+        </div>
+      )}
       <footer className="footer">
-        <p>© 2025 Weather WebApp made with ♡</p>
+        <p> 2025 Weather WebApp made with ♡</p>
       </footer>
     </div>
   );

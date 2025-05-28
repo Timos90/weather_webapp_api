@@ -46,6 +46,9 @@ dev-test-user:
 
 dev-test-weather:
 	cd backend/ && .venv/bin/python3 manage.py test apps.weather.tests.test_models apps.weather.tests.test_serializers apps.weather.tests.test_views --settings=config.settings.dev
+
+dev-test-personalization:
+	cd backend/ && .venv/bin/python3 manage.py test apps.personalization.tests.test_models apps.personalization.tests.test_serializers apps.personalization.tests.test_views --settings=config.settings.dev
 ###### FRONTEND SETUP ###############
 
 dev-npm-install:

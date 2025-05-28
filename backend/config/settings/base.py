@@ -16,6 +16,7 @@ CUSTOM_APPS = [
     "apps.user",
     "apps.weather",
     "apps.main",
+    "apps.personalization.apps.PersonalizationConfig",
 ]
 
 THIRD_PARTY_APPS = [

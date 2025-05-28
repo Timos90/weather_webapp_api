@@ -1,4 +1,5 @@
 import { apiRequest, buildUrl } from './apiHelpers';
+import { GenderOption } from '../types/types';
 
 const BASE_URL = import.meta.env.VITE_BASE_USER_URL;
 
@@ -21,6 +22,7 @@ export const registerUser = async (
   password: string,
   location: string,
   preferredTemperatureUnit: string,
+  gender: GenderOption,
   firstName?: string,
   lastName?: string
 ) => {
@@ -34,6 +36,7 @@ export const registerUser = async (
       password,
       location,
       preferred_temperature_unit: preferredTemperatureUnit,
+      gender,
       first_name: firstName || '',
       last_name: lastName || '',
     },
@@ -68,6 +71,7 @@ export const updateUserProfile = async (profileData: {
   last_name?: string;
   email?: string;
   username?: string;
+  gender?: GenderOption;
 }) => {
   const token = getAuthToken();
   if (!token) throw new Error('User is not authenticated. Please log in.');

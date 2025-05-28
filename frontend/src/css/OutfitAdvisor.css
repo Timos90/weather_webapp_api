@@ -1,0 +1,202 @@
+/* frontend/src/css/OutfitAdvisor.css */
+
+/* Modal Backdrop */
+.outfit-advisor-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* Darker, more prominent backdrop */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050; /* Ensure it's above other content */
+}
+
+/* Modal Content Box */
+.outfit-advisor-modal-content {
+  background-color: #ffffff; /* White background */
+  padding: 25px;
+  border-radius: 10px; /* Softer, larger radius */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* More pronounced shadow */
+  width: 90%;
+  max-width: 600px; /* Max width for larger screens */
+  max-height: 80vh; /* Max height */
+  overflow-y: auto; /* Scroll for overflow */
+  position: relative; /* For positioning the close button */
+  color: #333; /* Default text color for the modal content */
+}
+
+/* Close Button */
+.outfit-advisor-close-button {
+  position: absolute;
+  top: 15px; /* Adjusted for better placement */
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 1.8rem; /* Larger for easier clicking */
+  font-weight: bold;
+  color: #888; /* Lighter color, but still visible */
+  cursor: pointer;
+  padding: 0;
+  line-height: 1; /* Ensure consistent vertical alignment */
+}
+
+.outfit-advisor-close-button:hover {
+  color: #555; /* Darken on hover */
+}
+
+/* Main Title */
+.outfit-advisor-modal-content h2 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #007bff; /* A primary color for the title */
+  font-size: 1.8rem;
+}
+
+/* Section for individual advice (current or forecast slot) */
+.outfit-section {
+  background-color: #f9f9f9; /* Light grey background for sections */
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px; /* Space between sections */
+}
+
+.outfit-section h4 { /* Title for current conditions or forecast time */
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.3em;
+  font-weight: 600; /* Semibold */
+  color: #333;
+  border-bottom: 1px solid #ddd; /* Separator line */
+  padding-bottom: 8px;
+}
+
+/* Forecast Day Section */
+.forecast-day-section {
+  margin-bottom: 25px;
+  padding: 10px;
+  border-left: 3px solid #007bff; /* Accent border for the day */
+  background-color: #f0f8ff; /* Very light blue tint for day sections */
+  border-radius: 5px;
+}
+
+.forecast-day-section h3 { /* Day name (e.g., "Monday") */
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.5em;
+  color: #0056b3; /* Darker blue */
+}
+
+/* "Consider:" Subheading */
+.outfit-section h5 {
+  margin-top: 15px;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #555;
+}
+
+/* Lists for outfit items and advice */
+.outfit-section ul {
+  list-style-type: none; /* Remove default bullets */
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.outfit-section li {
+  padding: 6px 0; /* Add padding for spacing */
+  border-bottom: 1px dashed #eee; /* Subtle separator for list items */
+  font-size: 0.95em;
+}
+
+.outfit-section li:last-child {
+  border-bottom: none; /* No border for the last item */
+}
+
+/* General text within sections */
+.outfit-section p {
+  font-style: normal; /* Remove italic from previous style */
+  margin-top: 10px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+/* Placeholder text when no data */
+.outfit-advisor-modal-content > p { /* Direct child p for "No weather data" */
+  padding: 20px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  font-size: 1.1em;
+}
+
+/* Feedback Buttons Section */
+.outfit-feedback-actions {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #eee; /* Separator line above buttons */
+  display: flex;
+  justify-content: space-around; /* Evenly space out buttons */
+  align-items: center;
+}
+
+.feedback-button {
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.feedback-button:hover {
+  background-color: #e0e0e0;
+}
+
+.feedback-button:active {
+  transform: translateY(1px); /* Slight press effect */
+}
+
+.like-button {
+  border-color: #28a745; /* Green border for like */
+  color: #28a745;
+}
+
+.like-button:hover {
+  background-color: #d4edda; /* Light green background on hover */
+  color: #155724;
+}
+
+.dislike-button {
+  border-color: #dc3545; /* Red border for dislike */
+  color: #dc3545;
+}
+
+.dislike-button:hover {
+  background-color: #f8d7da; /* Light red background on hover */
+  color: #721c24;
+}
+
+.feedback-button:disabled,
+.feedback-button[disabled] {
+  background-color: #cccccc; /* Light grey background */
+  color: #666666;          /* Darker grey text */
+  cursor: not-allowed;     /* Not-allowed cursor */
+  opacity: 0.7;            /* Slightly transparent */
+  border-color: #bbbbbb;
+}
+
+.feedback-button:disabled:hover,
+.feedback-button[disabled]:hover {
+  background-color: #cccccc; /* Keep background same as disabled */
+  border-color: #bbbbbb;   /* Keep border same as disabled */
+  transform: none;          /* No scale or other transform */
+  box-shadow: none;         /* No shadow */
+}

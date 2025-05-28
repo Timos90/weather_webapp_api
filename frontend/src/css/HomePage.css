@@ -67,6 +67,14 @@
   --fd-border-radius: 30px;
 }
 
+/* Add this for .homepage-container if it's the main wrapper */
+.homepage-container {
+  position: relative; /* Crucial for absolute positioning of children */
+  min-height: 100vh; /* Ensure it takes at least full viewport height */
+  display: flex;      /* If it's a flex container */
+  flex-direction: column; /* Stack children like header, content, footer */
+}
+
 /* Force full screen */
 .home-page {
   display: flex;
@@ -88,6 +96,7 @@
 
 /* Logged-in layout */
 .logged-in-layout {
+  position: relative; /* Crucial for the button's positioning */
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
@@ -396,4 +405,149 @@
     gap: 0.75rem;
     padding: 0.75rem;
   }
+}
+
+/* === Advice Modal Styles === */
+/* .advice-trigger-button styles removed as the button is now in NavBar */
+
+.floating-advice-button {
+  position: absolute;
+  top: 10px; /* Adjusted for smaller size */
+  left: 10px; /* Adjusted for smaller size */
+  z-index: 100;
+  padding: 7px 13px; /* Reduced padding */
+  font-size: 0.8em;  /* Reduced font size */
+  /* Base background, will be overridden by animation but useful for hover/fallback */
+  background-color: rgba(40, 40, 40, 0.7);
+  color: #020202;
+  border: 1px solid rgba(200, 200, 200, 0.3);
+  border-radius: 20px; /* Slightly smaller radius for smaller button */
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 0 0px rgba(0, 0, 0, 0); 
+  animation: fadedColorGlow 5s infinite alternate;
+  backdrop-filter: blur(3px); 
+}
+
+.floating-advice-button:hover {
+  /* Static background on hover to make it clear animation is paused */
+  background-color: rgba(60, 60, 60, 0.9);
+  transform: scale(1.05);
+  animation-play-state: paused; 
+}
+
+@keyframes fadedColorGlow {
+  0% {
+    background-color: rgba(100, 180, 255, 0.5); /* Faded Blue BG */
+    box-shadow: 0 0 8px rgba(100, 180, 255, 0.4),
+                0 0 15px rgba(100, 180, 255, 0.3);
+    border-color: rgba(100, 180, 255, 0.6);
+  }
+  25% {
+    background-color: rgba(120, 255, 120, 0.55); /* Faded Green BG */
+    box-shadow: 0 0 10px rgba(120, 255, 120, 0.45),
+                0 0 18px rgba(120, 255, 120, 0.35);
+    border-color: rgba(120, 255, 120, 0.7);
+  }
+  50% {
+    background-color: rgba(255, 180, 100, 0.5); /* Faded Orange BG */
+    box-shadow: 0 0 8px rgba(255, 180, 100, 0.4),
+                0 0 15px rgba(255, 180, 100, 0.3);
+    border-color: rgba(255, 180, 100, 0.6);
+  }
+  75% {
+    background-color: rgba(220, 120, 255, 0.55); /* Faded Purple BG */
+    box-shadow: 0 0 10px rgba(220, 120, 255, 0.45),
+                0 0 18px rgba(220, 120, 255, 0.35);
+    border-color: rgba(220, 120, 255, 0.7);
+  }
+  100% {
+    background-color: rgba(255, 100, 100, 0.5); /* Faded Red BG */
+    box-shadow: 0 0 8px rgba(255, 100, 100, 0.4),
+                0 0 15px rgba(255, 100, 100, 0.3);
+    border-color: rgba(255, 100, 100, 0.6);
+  }
+}
+
+.advice-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it's on top */
+}
+
+.advice-modal-content {
+  background-color: #2c2c2e; /* Dark background for the modal content */
+  color: #f0f0f0; /* Light text color */
+  padding: 25px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px; /* Max width for the modal */
+  max-height: 85vh; /* Max height */
+  overflow-y: auto; /* Allow scrolling for content */
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.advice-modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.8em;
+  color: #aaa; /* Light color for close button */
+  cursor: pointer;
+  line-height: 1;
+}
+
+.advice-modal-close-button:hover {
+  color: #fff; /* Brighter on hover */
+}
+
+.advice-modal-content h2 {
+  margin-top: 0;
+  color: #66ccff; /* A light blue for the main title */
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.advice-modal-content h3.forecast-advice-header {
+  margin-top: 25px;
+  margin-bottom: 15px;
+  color: #aaddff; /* Slightly different blue for sub-headers */
+  border-bottom: 1px solid #555;
+  padding-bottom: 8px;
+}
+
+.daily-forecast-advice {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: rgba(255,255,255,0.05); /* Very subtle background for each day's section */
+  border-radius: 5px;
+}
+
+.daily-forecast-advice h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #e0e0e0; /* Lighter text for day names */
+  font-size: 1.2em;
+}
+
+/* Styling for OutfitAdvisor component when inside the modal */
+.advice-modal-content .outfit-advisor {
+  background-color: rgba(0,0,0,0.1); /* Slightly darker background for individual advisor boxes */
+  border: 1px solid #555;
+  color: #d0d0d0;
+}
+
+.advice-modal-content .outfit-advisor h4,
+.advice-modal-content .outfit-advisor h5 {
+  color: #b0e0ff; /* Titles within OutfitAdvisor */
 }

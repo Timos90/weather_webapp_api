@@ -120,10 +120,12 @@ export const fetchForecast = async (
         feels_like: entry.main.feels_like,
         temp_min: entry.main.temp_min,
         temp_max: entry.main.temp_max,
+        weather_main: entry.weather[0].main,
         weather_description: entry.weather[0].description,
         weather_icon: entry.weather[0].icon,
         humidity: entry.main.humidity,
         wind_speed: entry.wind.speed,
+        pop: entry.pop !== undefined ? entry.pop * 100 : undefined,
       });
       return acc;
     }, {});

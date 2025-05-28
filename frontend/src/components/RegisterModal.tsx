@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { registerUser } from '../api/user';
 import '../css/RegisterModal.css';
-import { RegisterModalProps } from '../types/types';
+import { RegisterModalProps, GenderOption } from '../types/types';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
   const [username, setUsername] = useState('');
@@ -9,6 +9,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [location, setLocation] = useState('');
   const [preferredUnit, setPreferredUnit] = useState('C');
+  const [gender, setGender] = useState<GenderOption>('Man');
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -32,13 +33,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
     setSuccess('');
 
     try {
-      await registerUser(username, email, password, location, preferredUnit);
+      await registerUser(username, email, password, location, preferredUnit, gender);
       setSuccess('Registration successful! You can now log in.');
       setUsername('');
       setEmail('');
       setPassword('');
       setLocation('');
       setPreferredUnit('C');
+      setGender('Man');
     } catch (err: any) {
       if (typeof err === 'object' && err !== null) {
         parseFieldErrors(err);
@@ -95,6 +97,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
         setPassword('');
         setLocation('');
         setPreferredUnit('C');
+        setGender('Man');
       }}
     >
       <div className="register-modal-content" onClick={stopPropagation}>
@@ -109,6 +112,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
             setPassword('');
             setLocation('');
             setPreferredUnit('C');
+            setGender('Man');
           }}
         >
           X
@@ -191,6 +195,20 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
             >
               <option value="C">Celsius</option>
               <option value="F">Fahrenheit</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="gender-select">Gender:</label>
+            <select
+              id="gender-select"
+              data-testid="gender-select"
+              value={gender}
+              onChange={(e) => setGender(e.target.value as GenderOption)}
+              required
+            >
+              <option value="Man">Man</option>
+              <option value="Woman">Woman</option>
+              <option value="Non-binary">Non-binary</option>
             </select>
           </div>
           <button type="submit">Register</button>

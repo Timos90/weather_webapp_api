@@ -55,7 +55,7 @@ describe('RegisterModal', () => {
         fireEvent.submit(screen.getByTestId('register-form'));
 
         await waitFor(() => {
-            expect(registerUser).toHaveBeenCalledWith('bob','b@b.com','pw','NY','C');
+            expect(registerUser).toHaveBeenCalledWith('bob','b@b.com','pw','NY','C', 'Man');
             expect(screen.getByText('Registration successful! You can now log in.')).toBeInTheDocument();
             expect(screen.getByTestId('username-input')).toHaveValue('');
             expect(screen.getByTestId('preferred-unit')).toHaveValue('C');

@@ -4,23 +4,80 @@ export interface WeatherDisplayProps {
   unit: 'C' | 'F';
 }
 
+export interface ForecastSlot {
+  datetime: string;
+  temperature: number;
+  feels_like: number;
+  temp_min: number;
+  temp_max: number;
+  weather_main?: string;
+  weather_description: string;
+  weather_icon: string;
+  humidity: number;
+  wind_speed: number;
+  pop?: number;
+}
+
 export interface ForecastItem {
   day_name: string;
   date: string;
   uv_index: number;
   sunrise?: string;
   sunset?: string;
-  forecasts: {
-    datetime: string;
-    temperature: number;
+  forecasts: ForecastSlot[];
+}
+
+export interface APICurrentWeather {
+  coord: {
+    lon: number;
+    lat: number;
+  };
+  weather: Array<{
+    id: number;
+    main: string;
+    description: string;
+    icon: string;
+  }>;
+  base: string;
+  main: {
+    temp: number;
     feels_like: number;
     temp_min: number;
     temp_max: number;
-    weather_description: string;
-    weather_icon: string;
+    pressure: number;
     humidity: number;
-    wind_speed: number;
-  }[];
+    sea_level?: number;
+    grnd_level?: number;
+  };
+  visibility: number;
+  wind: {
+    speed: number;
+    deg: number;
+    gust?: number;
+  };
+  rain?: {
+    '1h'?: number;
+    '3h'?: number;
+  };
+  snow?: {
+    '1h'?: number;
+    '3h'?: number;
+  };
+  clouds: {
+    all: number;
+  };
+  dt: number;
+  sys: {
+    type?: number;
+    id?: number;
+    country: string;
+    sunrise: number;
+    sunset: number;
+  };
+  timezone: number;
+  id: number;
+  name: string;
+  cod: number;
 }
 
 export interface MapComponentProps {
@@ -43,9 +100,19 @@ export interface NewsDisplayProps {
   articles: NewsArticle[];
 }
 
+export type GenderOption = "Man" | "Woman" | "Non-binary";
+
 export interface Favorite {
   city_name: string;
   country_code: string;
+}
+
+export interface UserProfile {
+  id: number; 
+  username: string;
+  email: string;
+  favorites?: Favorite[];
+  gender?: GenderOption; 
 }
 
 export interface NavBarProps {

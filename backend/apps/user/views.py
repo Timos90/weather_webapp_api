@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -119,6 +119,7 @@ class UserProfileView(APIView):
             'preferred_temperature_unit',
             user_profile.preferred_temperature_unit
         )
+        user_profile.gender = data.get('gender', user_profile.gender)
         user_profile.save()
 
         serializer = UserProfileSerializer(user_profile)

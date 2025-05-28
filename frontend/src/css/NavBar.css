@@ -245,6 +245,14 @@
   background-color: #9e9e9e;
 }
 
+/* Ensure auth buttons are grouped and aligned */
+.auth-buttons {
+  display: flex;
+  gap: 0.625rem; /* 10px */
+  flex: 0 0 auto;
+  margin-left: 0.9375rem; /* 15px */
+}
+
 /* Dedicated styles for iPad Pro / Wider Tablets (769px to 1024px) */
 @media only screen and (min-width: 48.0625rem) and (max-width: 64rem) {
   .navbar {

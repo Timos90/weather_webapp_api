@@ -6,15 +6,21 @@ import '../css/UserProfilePage.css';
 import '../css/deleteAnimation.css';
 import { runDeleteAnimation } from '../utils/deleteAnimation.d';
 import DeleteAccountModal from './DeleteAccountModal';
-import { UserProfileProps } from '../types/types';
+import { UserProfileProps as OriginalUserProfileProps, GenderOption } from '../types/types'; // Renamed to avoid conflict
 
-const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUpdated }) => {
+// Extend original props to include the new callback
+interface UserProfileProps extends OriginalUserProfileProps {
+  onProfileDataChange?: (newGender: GenderOption) => void;
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUpdated, onProfileDataChange }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [location, setLocation] = useState('');
   const [preferredTemperatureUnit, setPreferredTemperatureUnit] = useState<'C' | 'F'>('C');
+  const [gender, setGender] = useState<GenderOption | undefined>(undefined);
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [firstNameError, setFirstNameError] = useState('');
@@ -34,6 +40,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
           setUsername(data.user.username);
           setFirstName(data.user.first_name);
           setLastName(data.user.last_name);
+          setGender(data.gender as GenderOption);
         })
         .catch(() => setGeneralError('Unable to fetch user profile.'));
 
@@ -55,8 +62,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         first_name: firstName,
         last_name: lastName,
         username,
+        gender: gender,
       });
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
+      setGender(updatedProfile.gender as GenderOption);
+      // Call the callback with the new gender
+      if (updatedProfile.gender) {
+        onProfileDataChange?.(updatedProfile.gender as GenderOption);
+      }
     } catch (err) {
       setGeneralError('Failed to update unit preference.');
     }
@@ -78,6 +91,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         last_name: lastName,
         location,
         preferred_temperature_unit: preferredTemperatureUnit,
+        gender: gender,
       });
 
       setUsername(updatedProfile.user.username);
@@ -86,6 +100,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
       setLastName(updatedProfile.user.last_name);
       setLocation(updatedProfile.location);
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
+      setGender(updatedProfile.gender as GenderOption);
+      // Call the callback with the new gender
+      if (updatedProfile.gender) {
+        onProfileDataChange?.(updatedProfile.gender as GenderOption);
+      }
 
       alert('Profile updated successfully!');
     } catch (err) {
@@ -191,6 +210,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         <span style={{ marginLeft: '0.5rem' }}>
           {preferredTemperatureUnit === 'C' ? 'Celsius' : 'Fahrenheit'}
         </span>
+      </div>
+
+      <div>
+        <label>Gender:</label>
+        <select
+          id="gender-select"
+          data-testid="gender-select"
+          value={gender || ''}
+          onChange={(e) => setGender(e.target.value as GenderOption)}
+        >
+          <option value="" disabled={gender !== undefined}>Select Gender</option>
+          <option value="Man">Man</option>
+          <option value="Woman">Woman</option>
+          <option value="Non-binary">Non-binary</option>
+        </select>
       </div>
 
       <div>
