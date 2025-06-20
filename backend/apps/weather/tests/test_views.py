@@ -1,6 +1,7 @@
 # tests/test_views.py
 from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
+import os
 from django.contrib.auth.models import User
 from apps.user.models import UserProfile  # Assuming you have a UserProfile model
 import datetime
@@ -120,6 +121,7 @@ class NewsViewTest(APITestCase):
         self.profile = UserProfile.objects.create(user=self.user, location='New York')
         self.url = reverse('weather-urls:news-view')
     
+    @patch.dict('os.environ', {'NEWS_API_KEY': 'test_key'})
     @patch('apps.weather.views.news.requests.get')
     @patch('apps.weather.views.news.get_country_code_from_owm')
     def test_news_success(self, mocked_get_country_code, mocked_get):
@@ -128,7 +130,7 @@ class NewsViewTest(APITestCase):
         # Prepare a fake news response
         fake_articles = [
             {
-                "title": "Breaking Weather News",
+                "title": "Breaking Weather News", # This title contains a keyword
                 "url": "http://example.com/news1",
                 "publishedAt": datetime.datetime.now().isoformat(),
                 "content": "News content",
@@ -142,5 +144,5 @@ class NewsViewTest(APITestCase):
         response = self.client.get(self.url, {'location': 'New York'})
         self.assertEqual(response.status_code, 200)
         # If valid, expect one article in response after filtering
-        self.assertTrue(len(response.data) >= 0)  # Depending on filtering
+        self.assertEqual(len(response.data), 1)
 
