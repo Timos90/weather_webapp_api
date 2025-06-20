@@ -1,13 +1,48 @@
 import React from 'react';
-import Slider from "react-slick";
-import { NewsDisplayProps } from '../types/types';
+import Slider from 'react-slick';
+import { NewsArticle } from '../types/types';
+import NewsCardSkeleton from './NewsCardSkeleton';
+
+// Update NewsDisplayProps to include optional locationName
+interface NewsDisplayProps {
+  articles: NewsArticle[];
+  locationName?: string;
+  loading: boolean;
+}
 import '../css/NewsDisplay.css';
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 
-const NewsDisplay: React.FC<NewsDisplayProps> = ({ articles }) => {
+const NewsDisplay: React.FC<NewsDisplayProps> = ({ articles, locationName, loading }) => {
+  if (loading) {
+    const settings = {
+      dots: true,
+      infinite: false,
+      speed: 500,
+      slidesToShow: 2,
+      slidesToScroll: 1,
+      responsive: [
+        { breakpoint: 1024, settings: { slidesToShow: 1 } },
+        { breakpoint: 600, settings: { slidesToShow: 1 } }
+      ]
+    };
+    return (
+      <div className="news-display">
+        <h2>Latest Weather News</h2>
+        <Slider {...settings} className="news-slider">
+          {[...Array(2)].map((_, index) => (
+            <NewsCardSkeleton key={index} />
+          ))}
+        </Slider>
+      </div>
+    );
+  }
+
   if (articles.length === 0) {
-    return <div className="news-display no-news">No news available.</div>;
+    const message = locationName 
+      ? `No relevant weather news found for ${locationName}.` 
+      : "No news available.";
+    return <div className="news-display no-news">{message}</div>;
   }
 
   const settings = {

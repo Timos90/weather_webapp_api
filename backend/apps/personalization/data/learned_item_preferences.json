@@ -1,0 +1,232 @@
+{
+    "overall_item_stats": {
+        "sunglasses": {
+            "likes": 2,
+            "dislikes": 1,
+            "net_score": 1
+        },
+        "sun_hat": {
+            "likes": 2,
+            "dislikes": 1,
+            "net_score": 1
+        },
+        "dress": {
+            "likes": 3,
+            "dislikes": 1,
+            "net_score": 2
+        },
+        "sandals": {
+            "likes": 3,
+            "dislikes": 1,
+            "net_score": 2
+        },
+        "tank_top": {
+            "likes": 4,
+            "dislikes": 2,
+            "net_score": 2
+        },
+        "skirt": {
+            "likes": 2,
+            "dislikes": 1,
+            "net_score": 1
+        },
+        "raincoat": {
+            "likes": 13,
+            "dislikes": 3,
+            "net_score": 10
+        },
+        "waterproof_shoes": {
+            "likes": 13,
+            "dislikes": 3,
+            "net_score": 10
+        },
+        "t_shirt": {
+            "likes": 8,
+            "dislikes": 3,
+            "net_score": 5
+        },
+        "sneakers": {
+            "likes": 11,
+            "dislikes": 3,
+            "net_score": 8
+        },
+        "pants": {
+            "likes": 11,
+            "dislikes": 3,
+            "net_score": 8
+        },
+        "light_jacket": {
+            "likes": 4,
+            "dislikes": 3,
+            "net_score": 1
+        },
+        "umbrella": {
+            "likes": 0,
+            "dislikes": 1,
+            "net_score": -1
+        },
+        "long_sleeve_shirt": {
+            "likes": 5,
+            "dislikes": 0,
+            "net_score": 5
+        },
+        "cardigan": {
+            "likes": 5,
+            "dislikes": 0,
+            "net_score": 5
+        }
+    },
+    "alert_specific_dislikes": {
+        "Gewitterwarnung": {
+            "sandals": 1,
+            "skirt": 1,
+            "sun_hat": 1,
+            "tank_top": 1,
+            "sunglasses": 1
+        },
+        "High Wind Warning": {
+            "t_shirt": 1,
+            "pants": 1,
+            "sneakers": 1,
+            "umbrella": 1
+        }
+    },
+    "temperature_range_feedback": {
+        "hot_above_30c": {
+            "sunglasses": {
+                "likes": 1,
+                "dislikes": 1,
+                "net_score": 0
+            },
+            "sun_hat": {
+                "likes": 1,
+                "dislikes": 1,
+                "net_score": 0
+            },
+            "dress": {
+                "likes": 2,
+                "dislikes": 1,
+                "net_score": 1
+            },
+            "sandals": {
+                "likes": 3,
+                "dislikes": 1,
+                "net_score": 2
+            },
+            "tank_top": {
+                "likes": 3,
+                "dislikes": 2,
+                "net_score": 1
+            },
+            "skirt": {
+                "likes": 1,
+                "dislikes": 1,
+                "net_score": 0
+            },
+            "raincoat": {
+                "likes": 0,
+                "dislikes": 1,
+                "net_score": -1
+            },
+            "waterproof_shoes": {
+                "likes": 0,
+                "dislikes": 1,
+                "net_score": -1
+            }
+        },
+        "warm_20_30c": {
+            "t_shirt": {
+                "likes": 5,
+                "dislikes": 0,
+                "net_score": 5
+            },
+            "sunglasses": {
+                "likes": 1,
+                "dislikes": 0,
+                "net_score": 1
+            },
+            "sun_hat": {
+                "likes": 1,
+                "dislikes": 0,
+                "net_score": 1
+            },
+            "sneakers": {
+                "likes": 4,
+                "dislikes": 0,
+                "net_score": 4
+            },
+            "pants": {
+                "likes": 4,
+                "dislikes": 0,
+                "net_score": 4
+            },
+            "raincoat": {
+                "likes": 5,
+                "dislikes": 0,
+                "net_score": 5
+            },
+            "waterproof_shoes": {
+                "likes": 5,
+                "dislikes": 0,
+                "net_score": 5
+            },
+            "dress": {
+                "likes": 1,
+                "dislikes": 0,
+                "net_score": 1
+            },
+            "tank_top": {
+                "likes": 1,
+                "dislikes": 0,
+                "net_score": 1
+            },
+            "skirt": {
+                "likes": 1,
+                "dislikes": 0,
+                "net_score": 1
+            }
+        },
+        "mild_10_20c": {
+            "sneakers": {
+                "likes": 7,
+                "dislikes": 2,
+                "net_score": 5
+            },
+            "raincoat": {
+                "likes": 8,
+                "dislikes": 2,
+                "net_score": 6
+            },
+            "light_jacket": {
+                "likes": 4,
+                "dislikes": 3,
+                "net_score": 1
+            },
+            "t_shirt": {
+                "likes": 3,
+                "dislikes": 2,
+                "net_score": 1
+            },
+            "pants": {
+                "likes": 7,
+                "dislikes": 2,
+                "net_score": 5
+            },
+            "waterproof_shoes": {
+                "likes": 8,
+                "dislikes": 2,
+                "net_score": 6
+            },
+            "long_sleeve_shirt": {
+                "likes": 5,
+                "dislikes": 0,
+                "net_score": 5
+            },
+            "cardigan": {
+                "likes": 5,
+                "dislikes": 0,
+                "net_score": 5
+            }
+        }
+    }
+}

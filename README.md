@@ -16,51 +16,68 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 
 ---
 
-## Key Features
+## What's New in v1.0.0: The AI Personalization Update
 
-- **User Management**  
-  - Registration, Login & Logout (DRF token auth)  
-  - Profile CRUD: username, email, name, location, preferred units  
-  - Account deletion with email confirmation  
+This major update transitions the application from a standard weather utility to a personalized, AI-powered weather companion. The core logic for suggestions has been moved from the frontend to a robust Django backend, enabling more sophisticated and context-aware features.
 
-- **Favorites**  
-  - Add/remove cities to your favorites list  
-  - Persisted per‑user via `FavoriteLocation` model  
+- **AI-Powered Outfit Advisor**: A new modal on the homepage provides dynamic outfit suggestions.
+  - **Context-Aware Logic**: Suggestions are tailored based on weather (temperature, precipitation, UV index), time of day, user-provided occasion (e.g., "casual outing," "work"), and user gender.
+  - **Learns from Feedback**: The system learns from user "likes" and "dislikes" on suggested items to improve future recommendations. Feedback is analyzed for different weather conditions and alerts.
+  - **Intelligent Shoe Logic**: A sophisticated system ensures only one, context-appropriate pair of shoes is suggested (e.g., sandals for warm casual outings, waterproof shoes for rain).
 
-- **Weather Data**  
-  - **Current weather** by city name or geolocation  
-  - **5‑day / 3‑hourly forecast**, with UV index, sunrise/sunset  
-  - **Live weather map** using Leaflet + OpenWeatherMap tile layers  
+- **Backend Overhaul & New Personalization API**:
+  - **New `personalization` App**: A dedicated Django app now houses all the AI logic.
+  - **New API Endpoints**:
+    - `POST /api/v1/personalization/suggest-outfit/`: Takes weather and occasion data, returns a full outfit suggestion.
+    - `POST /api/v1/personalization/outfit-feedback/`: Collects user feedback to train the suggestion model.
+  - **Automated Feedback Analysis**: A background cron job runs periodically within the Docker container to process and analyze user feedback.
+  - **News Deduplication**: The news feed logic now intelligently removes duplicate articles fetched from different sources.
 
-- **Alerts & News**  
-  - Fetch severe weather alerts (WeatherAPI)  
-  - Pull weather‑related news articles (NewsAPI)  
-  - Filter articles by multi‑language weather keywords  
+- **Frontend Enhancements**:
+  - **OutfitAdvisor Integration**: The `OutfitAdvisor` component is now fully integrated into the homepage, calling the new backend API.
+  - **Refactored API Layer**: All frontend `fetch` calls have been migrated to `axios` for more robust data fetching.
+  - **Improved Documentation**: Completed JSDoc for all major React components, enhancing maintainability.
 
-- **Responsive UI**  
-  - Desktop layouts (mobile not yet full build)
-  - Interactive modals for login, registration, profile, alerts  
-  - Animated “trash can” delete buttons  
-
----
-
-
-- **Frontend**  
-  - `src/pages/HomePage.tsx`: main layout & data orchestration  
-  - `src/components/*`: modular UI (WeatherDisplay, ForecastDisplay, NewsDisplay, MapComponent, Modals…)  
-  - `src/api/*`: `weather.ts`, `user.ts`, `apiHelpers.ts` wrap REST endpoints  
-  - Type definitions in `src/types/types.ts`  
-  - Styling via scoped CSS modules (glassmorphism, responsive grids)  
-
-- **Backend**  
-  - `apps/user/`: auth, profile, registration, token endpoints  
-  - `apps/weather/`: favorites, current, forecast, alerts, news serializers & views  
-  - Models: `UserProfile` (1‑1 to Django User), `FavoriteLocation`  
-  - Validation: DRF serializers & custom validators  
-  - URL routing under `/api/user/` and `/api/weather/`  
+- **Notable Fixes & Improvements**:
+  - **Refined Suggestion Logic**: Corrected order of operations for applying feedback (temperature-based, alert-specific) and improved consistency of advice strings in `suggest_outfit_py`.
+  - **Deterministic Outfit Suggestions**: Removed random elements from core suggestion logic to ensure consistent outputs for given inputs, crucial for reliable testing and behavior.
+  - **Enhanced Shoe Selection**: Made shoe consistency logic more robust and context-aware, particularly for casual and warm weather scenarios.
+  - **Backend Test Stability**: Resolved `TypeError` issues and improved mocking in `apps/personalization/tests/test_outfit_logic.py`.
+  - **Frontend Stability**: Updated type guards in `WeatherDisplay.tsx` for more reliable weather data rendering.
+  - **User Profile Enhancement**: Integrated an optional 'gender' field into user profiles, allowing for more tailored suggestions.
+  - **Developer Experience**: Added new `make` commands (e.g., `dev-test-personalization`) for streamlined testing of specific app modules.
 
 ---
 
+## Core Features
+
+- **User Management**: Registration, Login/Logout (token-based), profile management (location, units), and secure account deletion.
+- **Favorites**: Add, remove, and view weather for a personalized list of favorite locations.
+- **Comprehensive Weather Data**:
+  - Current weather, 5-day/3-hourly forecasts, and UV index.
+  - Interactive weather map with multiple tile layers.
+- **Alerts & News**: Fetches severe weather alerts and multi-language, weather-related news articles.
+- **Responsive UI**: A clean, responsive interface with interactive modals and animations.
+
+---
+
+## Project Structure
+
+- **Frontend (`/frontend`)**:
+  - Built with **React (Vite + TypeScript)**.
+  - **Components**: A modular library of reusable components in `src/components/`.
+  - **API Layer**: Centralized API functions in `src/api/` using `axios`.
+  - **State Management**: Primarily uses React hooks (`useState`, `useContext`).
+  - **Testing**: Unit and component tests with **Vitest** and React Testing Library.
+
+- **Backend (`/backend`)**:
+  - Built with **Django** and **Django REST Framework**.
+  - **Apps**: Organized into `user`, `weather`, and the new `personalization` app.
+  - **Database**: PostgreSQL.
+  - **Testing**: `unittest` framework for comprehensive backend testing.
+  - **API Routing**: Endpoints are versioned under `/api/v1/`.
+
+---
 
 ## Deployment
 - Containers pushed to Oracle Cloud Registry
@@ -80,7 +97,7 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 
 ## API Endpoints
 
-### User (`/api/user/`)
+### User (`/api/v1/user/`)
 
 | Path               | Method      | Auth    | Description                                    |
 |--------------------|-------------|---------|------------------------------------------------|
@@ -90,7 +107,7 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 | `profile/`         | GET / PUT   | Token   | Retrieve or update user profile                |
 | `delete_account/`  | DELETE      | Token   | Delete account with email confirmation         |
 
-### Weather (`/api/weather/`)
+### Weather (`/api/v1/weather/`)
 
 | Path            | Method             | Auth      | Description                                        |
 |-----------------|--------------------|-----------|----------------------------------------------------|
@@ -99,6 +116,13 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 | `forecast/`     | GET                | Optional  | Retrieve multi‑day forecast                        |
 | `alerts/`       | GET                | Token     | Get weather alerts for city or profile location    |
 | `news/`         | GET                | Token     | Fetch weather‑related news for a specified city    |
+
+### Personalization (`/api/v1/personalization/`)
+
+| Path                  | Method      | Auth      | Description                                        |
+|-----------------------|-------------|-----------|----------------------------------------------------|
+| `suggest-outfit/`     | POST        | Optional  | Get an AI-powered outfit suggestion                |
+| `outfit-feedback/`    | POST        | Token     | Submit like/dislike feedback on suggestions        |
 
 
 ---

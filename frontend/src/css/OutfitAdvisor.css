@@ -30,17 +30,19 @@
 
 /* Close Button */
 .outfit-advisor-close-button {
-  position: absolute;
-  top: 15px; /* Adjusted for better placement */
-  right: 15px;
-  background: transparent;
+  position: sticky; /* Changed from absolute */
+  top: 15px; /* Keep it offset from the top of the scrollable container */
+  right: 15px; /* Keep it offset from the right */
+  background: #ffffff; /* Give it a background to avoid text overlapping */
   border: none;
-  font-size: 1.8rem; /* Larger for easier clicking */
+  font-size: 1.8rem;
   font-weight: bold;
-  color: #888; /* Lighter color, but still visible */
+  color: #888;
   cursor: pointer;
-  padding: 0;
-  line-height: 1; /* Ensure consistent vertical alignment */
+  padding: 5px; /* Add some padding so text isn't flush with edges */
+  line-height: 1;
+  z-index: 10; /* Ensure it stays on top of other content within the modal */
+  border-radius: 50%; /* Optional: make it circular for better aesthetics */
 }
 
 .outfit-advisor-close-button:hover {

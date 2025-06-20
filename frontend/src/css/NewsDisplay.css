@@ -55,6 +55,65 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 0 10px;
+}
+
+/* Skeleton Loader Styles */
+.news-card-skeleton {
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 300px; /* Adjust height to match news-card */
+}
+
+.skeleton-image {
+  height: 60%;
+  background-color: #e0e0e0;
+}
+
+.skeleton-details {
+  padding: 15px;
+  flex-grow: 1;
+}
+
+.skeleton-title {
+  height: 20px;
+  background-color: #e0e0e0;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.skeleton-date {
+  height: 15px;
+  width: 50%;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+}
+
+/* Shimmer Animation */
+.shimmer {
+  background-image: linear-gradient(
+    to right,
+    #e0e0e0 0%,
+    #f0f0f0 50%,
+    #e0e0e0 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  display: inline-block;
+  animation: shimmer 1.5s forwards infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* Each news card with glassmorphic effect */

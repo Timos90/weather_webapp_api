@@ -1,26 +1,46 @@
-import React, { useState } from 'react';
-import { WeatherData, suggestOutfit, OutfitSuggestion } from '../services/outfitSuggester';
+import React, { useState, useEffect } from 'react';
+// import { WeatherData } from '../services/outfitSuggester'; // Replaced by FrontendWeatherData
 import { GenderOption } from '../types/types'; 
 import '../css/OutfitAdvisor.css';
-import { submitOutfitFeedback, OutfitFeedbackPayload } from '../api/personalization';
+import { submitOutfitFeedback, OutfitFeedbackPayload, getOutfitSuggestions, OutfitSuggestionApiResponse, FrontendWeatherData } from '../api/personalization';
 
+/**
+ * Props for the {@link OutfitAdvisor} component.
+ * Defines the structure for weather advice data (current and forecast) and interaction callbacks.
+ */
 interface OutfitAdvisorProps {
-  currentWeatherAdvice?: WeatherData;
+  /** Weather data and advice for the current conditions. */
+  currentWeatherAdvice?: FrontendWeatherData;
+  /** Array of forecast data, each element representing a day with multiple time slots. */
   forecastAdvice?: Array<{
+    /** The name of the forecasted day (e.g., "Monday"). */
     dayName: string;
-    slots: WeatherData[];
+    /** Array of weather data for different time slots within the day. */
+    slots: FrontendWeatherData[];
   }>;
+  /** Callback function to close the advisor modal. */
   onClose: () => void;
+  /** Optional gender of the user to tailor suggestions. */
   userGender?: GenderOption;
 }
 
+/**
+ * Props for the {@link SingleOutfitAdvice} component.
+ * Defines the necessary data to display a single piece of outfit advice, including weather data and a title.
+ */
 interface SingleOutfitAdviceProps {
-  weatherData: WeatherData;
+  /** The weather data for which to display outfit advice. */
+  weatherData: FrontendWeatherData;
+  /** A title for this specific advice section (e.g., "Current Conditions", "3:00 PM"). */
   title: string;
   userGender?: GenderOption;
 }
 
-// Helper to convert item IDs to display names
+/**
+ * A mapping from outfit item keys (as received from the backend) to human-readable display names.
+ * This is used to present outfit suggestions in a user-friendly format.
+ * For example, 't_shirt' becomes 'T-Shirt'.
+ */
 const OUTFIT_ITEM_NAMES: { [key: string]: string } = {
   t_shirt: 'T-Shirt',
   long_sleeve_shirt: 'Long Sleeve Shirt',
@@ -48,20 +68,116 @@ const OUTFIT_ITEM_NAMES: { [key: string]: string } = {
   cardigan: 'Cardigan',
   polo_shirt: 'Polo Shirt',
   tank_top: 'Tank Top',
+  vest: 'Vest',
+  capris: 'Capris',
+  thermal_top: 'Thermal Top',
 };
 
+/**
+ * Renders outfit advice for a single weather data point (e.g., current conditions or a specific forecast slot).
+ * This component fetches outfit suggestions based on the provided weather data and optional user gender,
+ * displays the suggestions, and allows users to submit 'like' or 'dislike' feedback.
+ * It manages its own state for loading suggestions, handling API errors, and feedback submission status.
+ *
+ * @param {SingleOutfitAdviceProps} props - The props for the component.
+ * @returns {React.ReactElement} The rendered single outfit advice section.
+ */
 export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherData, title, userGender }) => {
-  const suggestion: OutfitSuggestion = suggestOutfit(weatherData, userGender);
+  /** 
+   * State for storing the outfit suggestion data fetched from the API.
+   * It holds the response from `getOutfitSuggestions`, including suggested items and advice strings.
+   * Initialized to `null` and updated upon successful API call.
+   */
+  const [apiSuggestion, setApiSuggestion] = useState<OutfitSuggestionApiResponse | null>(null);
+  /** 
+   * State to track whether outfit suggestions are currently being loaded from the API.
+   * `true` while fetching, `false` otherwise. Used to display loading indicators.
+   */
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(true);
+  /** 
+   * State for storing any error message that occurs while fetching outfit suggestions.
+   * `null` if no error, or a string message if an error occurs. Displayed to the user.
+   */
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+
+  /** 
+   * State to track if the user has already submitted feedback (liked/disliked) for the current suggestion.
+   * Used to disable feedback buttons after a vote to prevent multiple submissions.
+   * Set to `true` after a successful feedback submission or if a 409 conflict (already voted) is received.
+   */
   const [hasVoted, setHasVoted] = useState(false);
+  /** 
+   * State for storing any error message that occurs while submitting outfit feedback.
+   * `null` if no error, or a string message if an error occurs. Displayed to the user.
+   */
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  /** 
+   * State for storing a success message after outfit feedback is successfully submitted.
+   * `null` initially, or a string message upon successful submission. Displayed to the user.
+   */
   const [feedbackSuccessMessage, setFeedbackSuccessMessage] = useState<string | null>(null);
 
+  /**
+   * Fetches outfit suggestions from the API when the component mounts or when
+   * `weatherData` or `userGender` props change. It handles loading states and errors.
+   */
+  useEffect(() => {
+    /**
+     * Asynchronously fetches outfit data from the backend API.
+     * Updates component state based on the API response (suggestions, loading status, errors).
+     */
+    const fetchOutfitData = async () => {
+      if (!weatherData) {
+        setSuggestionError("No weather data provided to suggest an outfit.");
+        setIsLoadingSuggestions(false);
+        return;
+      }
+      setIsLoadingSuggestions(true);
+      setSuggestionError(null);
+      setApiSuggestion(null);
+      try {
+        const response = await getOutfitSuggestions(weatherData, userGender);
+        setApiSuggestion(response);
+      } catch (err: any) {
+        let msg = 'Failed to fetch outfit suggestions.';
+        if (err.data && typeof err.data.detail === 'string') {
+          msg = err.data.detail;
+        } else if (err.message) {
+          msg = err.message;
+        }
+        setSuggestionError(msg);
+        console.error("Failed to fetch outfit suggestions:", err);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    fetchOutfitData();
+  }, [weatherData, userGender]);
+
+  /**
+   * Handles the submission of outfit feedback (like/dislike) to the API.
+   * It constructs the payload and updates the UI based on the API response (success/error).
+   * @param feedbackType - The type of feedback to submit ('like' or 'dislike').
+   */
+  /**
+   * Handles the submission of outfit feedback (like/dislike) to the API.
+   * It constructs the payload using current weather data, the API suggestion, and user gender (if available).
+   * It then calls `submitOutfitFeedback` and updates the UI with success or error messages,
+   * and sets `hasVoted` to true to prevent further submissions for the same suggestion.
+   *
+   * @param {'like' | 'dislike'} feedbackType - The type of feedback being submitted ('like' or 'dislike').
+   */
   const handleFeedback = async (feedbackType: 'like' | 'dislike') => {
     setFeedbackError(null); 
     setFeedbackSuccessMessage(null); 
+    if (!apiSuggestion) {
+      setFeedbackError("Cannot submit feedback: outfit suggestion not available.");
+      return;
+    }
     const payload: OutfitFeedbackPayload = {
-      weather_data: weatherData,
-      suggested_outfit: suggestion,
+      weather_data: weatherData, // weatherData from props is already camelCase FrontendWeatherData
+      suggested_outfit: apiSuggestion, // apiSuggestion (OutfitSuggestionApiResponse) has the correct structure
       user_gender_at_feedback: userGender,
       feedback_type: feedbackType,
     };
@@ -85,23 +201,35 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
     }
   };
 
+  if (isLoadingSuggestions) {
+    return <div className="outfit-section"><h4>{title}</h4><p>Loading suggestions...</p></div>;
+  }
+
+  if (suggestionError) {
+    return <div className="outfit-section"><h4>{title}</h4><p className="error-message">Error: {suggestionError}</p></div>;
+  }
+
+  if (!apiSuggestion) {
+    return <div className="outfit-section"><h4>{title}</h4><p>No suggestions available at the moment.</p></div>;
+  }
+
   return (
     <div className="outfit-section">
       <h4>{title}</h4>
-      {suggestion.items.length > 0 ? (
+      {apiSuggestion.suggested_items.length > 0 ? (
         <ul>
-          {suggestion.items.map(itemKey => (
+          {apiSuggestion.suggested_items.map(itemKey => (
             <li key={itemKey}>{OUTFIT_ITEM_NAMES[itemKey] || itemKey}</li>
           ))}
         </ul>
       ) : (
         <p>No specific outfit items to suggest for this period.</p>
       )}
-      {suggestion.advice.length > 0 && (
+      {apiSuggestion.advice_strings.length > 0 && (
         <>
           <h5>Consider:</h5>
           <ul>
-            {suggestion.advice.map((text, index) => (
+            {apiSuggestion.advice_strings.map((text, index) => (
               <li key={index}>{text}</li>
             ))}
           </ul>
@@ -121,6 +249,16 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
   );
 };
 
+
+/**
+ * The main OutfitAdvisor component. It renders as a modal and displays outfit advice
+ * for current weather conditions and for forecast periods (if provided).
+ * It utilizes the {@link SingleOutfitAdvice} component for rendering individual advice sections for current weather
+ * and each relevant forecast slot.
+ *
+ * @param {OutfitAdvisorProps} props - The props for the component.
+ * @returns {React.ReactElement} The rendered outfit advisor modal.
+ */
 const OutfitAdvisor: React.FC<OutfitAdvisorProps> = ({ currentWeatherAdvice, forecastAdvice, onClose, userGender }) => {
   return (
     <div className="outfit-advisor-modal-backdrop">

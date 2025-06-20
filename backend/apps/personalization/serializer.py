@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import OutfitFeedback
-from apps.user.models import UserProfile # For type hinting or if used directly
+from apps.user.models import UserProfile, GENDER_CHOICES # For type hinting or if used directly
 
 class OutfitFeedbackSerializer(serializers.ModelSerializer):
     # user_profile will be set in the view based on the request.user
@@ -27,3 +27,36 @@ class OutfitFeedbackSerializer(serializers.ModelSerializer):
     # user_profile = serializers.PrimaryKeyRelatedField(queryset=UserProfile.objects.all(), write_only=True)
     # And then fields would include 'user_profile' for writing.
     # But it's cleaner to set it in the view.
+
+
+class OutfitSuggestionRequestSerializer(serializers.Serializer):
+    """
+    Serializer for validating the request payload for outfit suggestions.
+    """
+    feels_like = serializers.FloatField(required=True)
+    temperature = serializers.FloatField(required=True)
+    unit = serializers.CharField(required=False, default='C', max_length=1) # 'C' or 'F'
+    precipitation_chance = serializers.IntegerField(
+        required=False, min_value=0, max_value=100, allow_null=True
+    )
+    weather_main = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=100
+    )
+    weather_description = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=255
+    )
+    uv_index = serializers.FloatField(required=False, allow_null=True)
+    wind_speed = serializers.FloatField(required=False, allow_null=True)
+    is_day = serializers.BooleanField(required=False, allow_null=True)
+    datetime = serializers.DateTimeField(required=False, allow_null=True)
+    user_gender = serializers.ChoiceField(
+        choices=GENDER_CHOICES, required=False, allow_blank=True, allow_null=True
+    )
+
+
+class OutfitSuggestionResponseSerializer(serializers.Serializer):
+    """
+    Serializer for structuring the outfit suggestion response.
+    """
+    suggested_items = serializers.ListField(child=serializers.CharField())
+    advice_strings = serializers.ListField(child=serializers.CharField())

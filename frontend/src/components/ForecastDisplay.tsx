@@ -2,12 +2,26 @@ import React, { useState } from 'react';
 import '../css/ForecastDisplay.css';
 import { ForecastItem } from '../types/types';
 
+/**
+ * Props for the ForecastDisplay component.
+ */
 interface ForecastDisplayProps {
+  /** An array of forecast data, where each item represents a day's forecast including multiple time slots. */
   data: ForecastItem[];
+  /** The temperature unit to display ('C' for Celsius, 'F' for Fahrenheit). */
   unit: 'C' | 'F';
 }
 
+/**
+ * Renders a 5-day weather forecast with daily tabs and expandable hourly details.
+ * Each day's forecast can be selected via tabs, and individual forecast slots for that day
+ * can be expanded to show more detailed weather information.
+ *
+ * @param {ForecastDisplayProps} props - The props for the component.
+ * @returns {React.ReactElement} The forecast display section or a 'no data' message.
+ */
 const ForecastDisplay: React.FC<ForecastDisplayProps> = ({ data, unit }) => {
+  /** State to keep track of the currently selected day's index in the `data` array. Defaults to the first day. */
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
   if (!data || data.length === 0) {
@@ -18,16 +32,36 @@ const ForecastDisplay: React.FC<ForecastDisplayProps> = ({ data, unit }) => {
     );
   }
 
+  /**
+   * Formats a temperature value according to the selected unit.
+   * @param {number} temp - The temperature value.
+   * @returns {string} The formatted temperature string (e.g., "25.0°C").
+   */
   const formatTemperature = (temp: number) => {
     const suffix = unit === 'C' ? '°C' : '°F';
     return `${temp.toFixed(1)}${suffix}`;
   };
 
+  /**
+   * Formats a wind speed value according to the selected unit.
+   * Metric (Celsius) uses m/s, Imperial (Fahrenheit) uses mph.
+   * @param {number} speed - The wind speed value.
+   * @returns {string} The formatted wind speed string (e.g., "5.0 m/s").
+   */
   const formatWindSpeed = (speed: number) => {
     const label = unit === 'C' ? 'm/s' : 'mph';
     return `${speed.toFixed(1)} ${label}`;
   };
 
+  /**
+   * Props for the ForecastItemRow sub-component.
+   * @param {any} forecast - The specific forecast data for this time slot.
+   * @param {number | string} uv_index - The UV index for the day this forecast slot belongs to.
+   * @param {string} [sunrise] - Optional sunrise time for the day.
+   * @param {string} [sunset] - Optional sunset time for the day.
+   */
+  // Note: The props for ForecastItemRow are defined inline in its signature.
+  // JSDoc for props is provided above for clarity.
   const ForecastItemRow = ({
     forecast,
     uv_index,
@@ -39,8 +73,18 @@ const ForecastDisplay: React.FC<ForecastDisplayProps> = ({ data, unit }) => {
     sunrise?: string;
     sunset?: string;
   }) => {
+    /**
+     * Renders a single row in the forecast display, representing a specific time slot.
+     * This row can be expanded to show more detailed weather information.
+     */
+    /** State to manage whether the forecast item row is expanded to show details. */
     const [expanded, setExpanded] = useState(false);
 
+    /** 
+     * Toggles the expanded state of the forecast item row.
+     * Stops event propagation to prevent unintended parent element clicks.
+     * @param {React.MouseEvent} e - The mouse event.
+     */
     const toggleExpand = (e: React.MouseEvent) => {
       e.stopPropagation();
       setExpanded(!expanded);

@@ -87,7 +87,7 @@ export const updateUserProfile = async (profileData: {
 };
 
 export const deleteUserAccount = async (email: string) => {
-  const token = localStorage.getItem('auth_token');
+  const token = getAuthToken();
   if (!token) throw new Error('User is not authenticated. Please log in.');
   const url = buildUrl(BASE_URL, '/delete_account/', {});
   const data = await apiRequest(url, {

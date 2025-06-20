@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import OutfitFeedback
+from .models import OutfitFeedback, UserItemPreference
 
 # Register your models here.
 
@@ -49,6 +49,30 @@ class OutfitFeedbackAdmin(admin.ModelAdmin):
 
     def weather_data_datetime_display_readonly(self, obj):
         return self.weather_data_datetime_display(obj) # Reuse the display logic
+
     weather_data_datetime_display_readonly.short_description = 'Weather Timestamp (datetime)'
 
     # To make user_profile searchable and filterable, it's often better to link directly
+
+
+@admin.register(UserItemPreference)
+class UserItemPreferenceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'item_name', 'preference_type', 'context_temperature_category', 'context_alert_event', 'count', 'feedback_source', 'updated_at')
+    list_filter = ('preference_type', 'feedback_source', 'context_temperature_category', 'user__username') # Filter by username
+    search_fields = ('user__username', 'item_name', 'context_alert_event')
+    readonly_fields = ('created_at', 'updated_at')
+    list_editable = ('count', 'preference_type', 'context_temperature_category', 'context_alert_event', 'feedback_source')
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'item_name', 'preference_type', 'count')
+        }),
+        ('Context (Optional)', {
+            'classes': ('collapse',),
+            'fields': ('context_temperature_category', 'context_alert_event')
+        }),
+        ('Metadata', {
+            'classes': ('collapse',),
+            'fields': ('feedback_source', 'created_at', 'updated_at')
+        }),
+    )
+

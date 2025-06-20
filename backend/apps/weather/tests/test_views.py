@@ -54,7 +54,10 @@ class AlertsViewTest(APITestCase):
         self.profile = UserProfile.objects.create(user=self.user, location='London')
     
     @patch('apps.weather.views.alerts.requests.get')
-    def test_alerts_success(self, mocked_get):
+    @patch('apps.weather.views.alerts.AlertsView._get_owm_geocoded_lat_lon')
+    def test_alerts_success(self, mocked_geocoding, mocked_get):
+        # Mock the geocoding call to return a valid lat/lon
+        mocked_geocoding.return_value = (51.5072, -0.1276)
         # Create a fake API response for alerts
         fake_response = {
             "alerts": {
@@ -118,7 +121,10 @@ class NewsViewTest(APITestCase):
         self.url = reverse('weather-urls:news-view')
     
     @patch('apps.weather.views.news.requests.get')
-    def test_news_success(self, mocked_get):
+    @patch('apps.weather.views.news.get_country_code_from_owm')
+    def test_news_success(self, mocked_get_country_code, mocked_get):
+        # Mock the geocoding call to return a valid country code
+        mocked_get_country_code.return_value = 'US'
         # Prepare a fake news response
         fake_articles = [
             {

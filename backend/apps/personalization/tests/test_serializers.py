@@ -2,7 +2,8 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from apps.user.models import UserProfile
-from apps.personalization.serializers import OutfitFeedbackSerializer
+from apps.personalization.serializers import OutfitFeedbackSerializer, OutfitSuggestionRequestSerializer
+from rest_framework.exceptions import ValidationError
 from apps.personalization.models import OutfitFeedback
 
 class OutfitFeedbackSerializerTest(TestCase):
@@ -123,3 +124,99 @@ class OutfitFeedbackSerializerTest(TestCase):
         self.assertEqual(instance.feedback_type, 'dislike')
         self.assertEqual(instance.user_profile, self.user_profile)
         self.assertEqual(instance.user_gender_at_feedback, 'Other')
+
+
+class OutfitSuggestionRequestSerializerTest(TestCase):
+    def setUp(self):
+        self.base_payload = {
+            'feels_like': 20.0,
+            'temperature': 22.0,
+            'precipitation_chance': 10,
+            'weather_main': 'Clear',
+            'weather_description': 'clear sky',
+            'uv_index': 5,
+            'wind_speed': 2.5,
+            'is_day': True,
+            'datetime': '2024-01-01T12:00:00Z',
+            'user_gender': 'Man'
+        }
+
+    def test_valid_payload_all_fields(self):
+        payload = {**self.base_payload, 'unit': 'C'}
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+    def test_valid_unit_celsius(self):
+        payload = {**self.base_payload, 'unit': 'C'}
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data['unit'], 'C')
+
+    def test_valid_unit_fahrenheit(self):
+        payload = {**self.base_payload, 'unit': 'F'}
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data['unit'], 'F')
+
+    def test_unit_not_provided_is_valid(self):
+        payload = {**self.base_payload} # unit is not provided
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        # Check that 'unit' is in validated_data and defaults to 'C' (as per serializer field default)
+        self.assertIn('unit', serializer.validated_data)
+        self.assertEqual(serializer.validated_data['unit'], 'C')
+
+    def test_invalid_unit_kelvin(self):
+        payload = {**self.base_payload, 'unit': 'K'}
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('unit', serializer.errors)
+        self.assertIn('"K" is not a valid choice.', str(serializer.errors['unit']))
+
+    def test_invalid_unit_empty_string(self):
+        payload = {**self.base_payload, 'unit': ''}
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('unit', serializer.errors)
+        self.assertIn('"" is not a valid choice.', str(serializer.errors['unit']))
+
+    def test_missing_required_field_feels_like(self):
+        payload = {**self.base_payload}
+        del payload['feels_like']
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('feels_like', serializer.errors)
+
+    def test_missing_required_field_temperature(self):
+        payload = {**self.base_payload}
+        del payload['temperature']
+        serializer = OutfitSuggestionRequestSerializer(data=payload)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('temperature', serializer.errors)
+
+    def test_optional_fields_not_provided(self):
+        # Test with only required fields + unit
+        required_payload = {
+            'feels_like': 20.0,
+            'temperature': 22.0,
+            'datetime': '2024-01-01T12:00:00Z',
+            'weather_main': 'Clear', # This is required because precipitation_chance is not always enough
+            'unit': 'C'
+        }
+        serializer = OutfitSuggestionRequestSerializer(data=required_payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        
+        validated_data = serializer.validated_data
+        # Check fields with defaults
+        self.assertEqual(validated_data.get('user_gender'), 'Unspecified') # Default value
+        self.assertEqual(validated_data.get('precipitation_chance'), 0)   # Default value
+        self.assertEqual(validated_data.get('unit'), 'C')                 # Default value (from payload)
+        self.assertEqual(validated_data.get('is_day'), True)              # Default value
+
+        # Check optional fields that allow null and have no explicit default (should be None if not provided)
+        self.assertIsNone(validated_data.get('weather_description'))
+        self.assertIsNone(validated_data.get('uv_index'))
+        self.assertIsNone(validated_data.get('wind_speed'))
+        self.assertIsNone(validated_data.get('humidity'))
+        self.assertIsNone(validated_data.get('cloud_cover'))
+        self.assertIsNone(validated_data.get('air_quality_index'))

@@ -69,17 +69,21 @@ export const fetchForecast = async (
   lon?: number,
   units: 'metric' | 'imperial' = 'metric'
 ): Promise<ForecastItem[]> => {
+  // Refactored to use apiRequest for consistent error handling
+  let url = `${BASE_URL}/forecast/`;
+  if (location) {
+    url += `?location=${encodeURIComponent(location)}&units=${units}`;
+  } else if (lat !== undefined && lon !== undefined) {
+    url += `?lat=${lat}&lon=${lon}&units=${units}`;
+  } else {
+    // This case should ideally be caught before calling, but as a safeguard:
+    return Promise.reject(new Error('Please provide a location or geolocation coordinates.'));
+  }
+
   try {
-    let url = `${BASE_URL}/forecast/`;
-    if (location) {
-      url += `?location=${encodeURIComponent(location)}&units=${units}`;
-    } else if (lat !== undefined && lon !== undefined) {
-      url += `?lat=${lat}&lon=${lon}&units=${units}`;
-    } else {
-      throw new Error('Please provide a location or geolocation coordinates.');
-    }
-    const response = await axios.get(url);
-    const data = response.data;
+    const data = await apiRequest(url); // Use apiRequest
+
+    // The rest of the data processing logic remains the same
     const formatDate = (dateObj: Date): string => {
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
@@ -90,9 +94,11 @@ export const fetchForecast = async (
     const todayFormatted = formatDate(today);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     const tomorrowFormatted = formatDate(tomorrow);
+    // Assuming city.coord.lat and city.coord.lon are present in the 'data' from apiRequest
     const uvIndex = await fetchUVIndex(data.city.coord.lat, data.city.coord.lon);
     const sunrise = data.city.sunrise ? new Date(data.city.sunrise * 1000).toLocaleTimeString() : undefined;
     const sunset = data.city.sunset ? new Date(data.city.sunset * 1000).toLocaleTimeString() : undefined;
+
     const groupedForecasts = data.list.reduce((acc: { [key: string]: any }, entry: any) => {
       const entryDate = new Date(entry.dt * 1000);
       const entryDateFormatted = formatDate(entryDate);
@@ -131,55 +137,69 @@ export const fetchForecast = async (
     }, {});
     return Object.values(groupedForecasts);
   } catch (error) {
-    console.error("Error fetching forecast:", error);
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Error fetching forecast data');
-    } else {
-      throw new Error('Error fetching forecast data');
-    }
+    // If apiRequest throws an error, or fetchUVIndex, or data processing fails
+    console.error("Error processing forecast data after apiRequest:", error);
+    // Re-throw the error to be caught by the caller (HomePage.tsx)
+    // If it's the custom error from apiRequest, it will be propagated as is.
+    // If it's an error from fetchUVIndex or processing, it will be that error.
+    throw error; 
   }
 };
 
 export const fetchNews = async (location?: string): Promise<NewsArticle[]> => {
+  const token = getAuthToken();
+  if (!token) {
+    // Simulate an API error structure for consistency if needed by calling component
+    // Or simply throw a standard error, depending on how HomePage handles auth errors for news
+    throw { 
+      message: "User is not authenticated. Please log in to see news.", 
+      status: 401, 
+      isApiError: true 
+    };
+  }
+
+  const url = `${BASE_URL}/news/?location=${encodeURIComponent(location || '')}`;
+
   try {
-    const token = getAuthToken();
-    if (!token) throw new Error("User is not authenticated. Please log in.");
-    const url = `${BASE_URL}/news/?location=${encodeURIComponent(location || '')}`;
-    
-    try {
-      const response = await axios.get(url, {
-        headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
-      });
-      
-      const data = response.data;
+    const data = await apiRequest(url, {
+      headers: { 'Authorization': `Token ${token}` },
+    });
+
+    // Assuming 'data' is the array of articles or an object like { articles: [], message: "..." }
+    // Adjust based on backend changes. For now, assume 'data' is the array.
+    if (Array.isArray(data)) {
       const articles = data.map((article: any) => ({
+        title: article.title,
+        url: article.url,
+        publishedAt: article.publishedAt,
+        content: article.content, // Ensure content is used or handled if not needed for display card
+        urlToImage: article.urlToImage || null,
+      }));
+
+      return articles;
+    } else if (data && Array.isArray(data.articles)) {
+      // Handle structured response like { articles: [], message: "..." }
+       if (data.articles.length === 0 && data.message) {
+        // Potentially use data.message in the UI if backend provides it
+        console.info(data.message);
+      }
+      return data.articles.map((article: any) => ({
         title: article.title,
         url: article.url,
         publishedAt: article.publishedAt,
         content: article.content,
         urlToImage: article.urlToImage || null,
       }));
-      
-      if (articles.length === 0) {
-        console.info(`No news articles found for ${location || 'the specified location'}.`);
-      }
-      
-      return articles;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 429) {
-          throw new Error(error.response.data.error || 'News API request limit reached. Please try again later.');
-        }
-        console.info(`No news articles found for ${location || 'the specified location'}.`);
-      }
-      return [];
     }
-  } catch (error) {
-    console.error("News fetch error:", error);
-    if (error instanceof Error && error.message.includes('News API request limit reached')) {
-      throw error;
-    }
-    return [];
+    // If data is not in expected format, or backend indicates no news in a way not yet handled
+    console.warn('Unexpected data format for news:', data);
+    return []; // Fallback to empty array
+
+  } catch (error: any) {
+    // apiRequest will throw an error with { message, status, data, isApiError }
+    // Log the error for debugging, then re-throw to be handled by the calling component (e.g., HomePage)
+    console.error("Error fetching news via apiRequest:", error.message, error.status, error.data);
+    throw error; // Re-throw the structured error from apiRequest
   }
 };
 
@@ -250,14 +270,22 @@ export const removeFromFavorites = async (city_name: string, country_code: strin
   }
 };
 
-export const fetchAlerts = async (location?: string): Promise<any[]> => {
+export const fetchAlerts = async (location?: string, latitude?: number, longitude?: number): Promise<any[]> => {
   const token = sessionStorage.getItem('auth_token');
   if (!token) {
     throw new Error("User is not authenticated. Please log in.");
   }
-  const url = location
-    ? `${BASE_URL}/alerts/?location=${encodeURIComponent(location)}`
-    : `${BASE_URL}/alerts/`;
+  let urlParams = new URLSearchParams();
+  if (location) {
+    urlParams.append('location', location);
+  }
+  if (latitude !== undefined && longitude !== undefined) {
+    urlParams.append('lat', latitude.toString());
+    urlParams.append('lon', longitude.toString());
+  }
+
+  const queryString = urlParams.toString();
+  const url = `${BASE_URL}/alerts/${queryString ? '?' + queryString : ''}`;
   try {
     const response = await axios.get(url, {
       headers: {

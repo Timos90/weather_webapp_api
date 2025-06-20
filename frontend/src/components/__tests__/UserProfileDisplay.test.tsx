@@ -55,7 +55,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
      (fetchFavoriteLocations as Mock).mockResolvedValue([]);
  
      render(<UserProfile onFavoriteClick={() => {}} onFavoriteUpdated={() => {}} />);
-     await waitFor(() => screen.getByText('Unable to fetch user profile.'));
+     await waitFor(() => screen.getByText(/Unable to fetch user profile\. Please try again later\./i));
    });
  
    test('displays general error if favorites fetch fails', async () => {
@@ -64,7 +64,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
      (fetchFavoriteLocations as Mock).mockRejectedValue(new Error('fail'));
  
      render(<UserProfile onFavoriteClick={() => {}} onFavoriteUpdated={() => {}} />);
-     await waitFor(() => screen.getByText('Unable to fetch favorite locations.'));
+     await waitFor(() => screen.getByText(/Unable to fetch favorite locations\. Please try again later\./i));
    });
  
    test('toggles temperature unit and calls updateUserProfile', async () => {
@@ -76,12 +76,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
      render(<UserProfile onFavoriteClick={() => {}} onFavoriteUpdated={() => {}} />);
      await waitFor(() => screen.getByDisplayValue('testuser'));
  
-     const toggle = screen.getByRole('checkbox');
-     fireEvent.click(toggle);
+     const toggleButton = screen.getByRole('button', { name: /Switch to °F/i }); // Assuming initial is C
+     fireEvent.click(toggleButton);
  
      await waitFor(() => {
        expect(updateUserProfile).toHaveBeenCalledWith(expect.objectContaining({ preferred_temperature_unit: 'F' }));
-       expect(screen.getByText('Fahrenheit')).toBeInTheDocument();
+       expect(screen.getByText(/Currently: °F/i)).toBeInTheDocument();
      });
    });
  
@@ -99,17 +99,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
  
      await waitFor(() => {
        expect(updateUserProfile).toHaveBeenCalled();
-       expect(global.alert).toHaveBeenCalledWith('Profile updated successfully!');
+       expect(screen.getByText('Profile updated successfully!')).toBeInTheDocument();
      });
    });
  
    test.each([
-     ['username', 'That username is already in use.', 'That username is already in use.'],
-     ['email', 'That email is already in use.', 'That email is already in use.'],
-     ['location', 'Invalid location error.', 'Invalid location error.'],
-     ['first_name', 'first_name missing.', 'first_name missing.'],
-     ['last_name', 'last_name missing.', 'last_name missing.'],
-     ['other', 'Unknown failure.', 'Unknown failure.'],
+     ['username', 'That username is already in use.', 'Failed to update profile: That username is already in use.'],
+     ['email', 'That email is already in use.', 'Failed to update profile: That email is already in use.'],
+     ['location', 'Invalid location error.', 'Failed to update profile: Invalid location error.'],
+     ['first_name', 'first_name missing.', 'Failed to update profile: first_name missing.'],
+     ['last_name', 'last_name missing.', 'Failed to update profile: last_name missing.'],
+     ['other', 'Unknown failure.', 'Failed to update profile: Unknown failure.'],
    ])(
      'parses and displays %s error on save failure',
      async (_field, message, expected) => {
@@ -168,7 +168,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
      (fetchFavoriteLocations as Mock).mockResolvedValue([]);
  
      render(<UserProfile onFavoriteClick={() => {}} onFavoriteUpdated={() => {}} />);
-     expect(await screen.findByText('Celsius')).toBeInTheDocument();
+     expect(await screen.findByText(/Currently: °C/i)).toBeInTheDocument();
    });
  
    test('first name and last name fields are editable', async () => {

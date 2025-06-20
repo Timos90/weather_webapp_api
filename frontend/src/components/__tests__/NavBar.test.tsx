@@ -100,8 +100,7 @@ describe('NavBar Component', () => {
     sessionStorage.setItem('auth_token', 'token');
     vi.spyOn(userApi, 'fetchUserProfile').mockResolvedValue({ username: 'u', location: 'l', preferred_temperature_unit: 'C' });
     vi.spyOn(userApi, 'updateUserProfile').mockResolvedValue({});
-
-    render(
+    const { rerender } = render(
       <NavBar
         onSearch={onSearch}
         onProfileClick={onProfileClick}
@@ -116,13 +115,37 @@ describe('NavBar Component', () => {
 
     await waitFor(() => expect(userApi.fetchUserProfile).toHaveBeenCalled());
 
-    const toggle = screen.getByRole('checkbox');
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('checkbox'));
 
+    // Check that onUnitChange was called with 'F' due to the click
     expect(onUnitChange).toHaveBeenCalledWith('F');
-    await waitFor(() => expect(userApi.updateUserProfile).toHaveBeenCalled());
-    // verify that Fahrenheit label gains active class
-    expect(screen.getByText(/°F/)).toHaveClass('active');
+
+    // Simulate parent component re-rendering NavBar with the new unit prop
+    rerender(
+      <NavBar
+        onSearch={onSearch}
+        currentLocation="Test City, TC"
+        onProfileClick={onProfileClick}
+        favorites={[]}
+        onAddFavorite={onAddFavorite}
+        onDeleteFavorite={onDeleteFavorite}
+        onUnitChange={onUnitChange}
+        unit="F" // Pass the new unit
+      />
+    );
+
+    // Wait for updateUserProfile to be called as it's async
+    await waitFor(() => 
+      expect(userApi.updateUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        preferred_temperature_unit: 'F',
+      }))
+    );
+
+    // Verify that Fahrenheit label gains active class and Celsius loses it
+    await waitFor(() => {
+      expect(screen.getByText(/°F/)).toHaveClass('active');
+      expect(screen.getByText(/°C/)).not.toHaveClass('active');
+    });
   });
 
   it('shows add/remove favorite buttons based on props and calls callbacks', async () => {
@@ -130,6 +153,7 @@ describe('NavBar Component', () => {
     sessionStorage.setItem('auth_token', 'token');
     vi.spyOn(userApi, 'fetchUserProfile').mockResolvedValue({ username: 'testuser', location: 'Test Location', preferred_temperature_unit: 'C' });
 
+    const mockFavorites = [{ city_name: 'London', country_code: 'GB', latitude: 51.5074, longitude: 0.1278 }];
     // already a favorite
     await act(async () => {
       render(
@@ -137,8 +161,8 @@ describe('NavBar Component', () => {
           onSearch={onSearch}
           onProfileClick={onProfileClick}
           onUnitChange={onUnitChange}
-          currentLocation={currentLocation}
-          favorites={[{ city_name: 'City1', country_code: 'CC' }]}
+          currentLocation="London, GB"
+          favorites={mockFavorites}
           onAddFavorite={onAddFavorite}
           onDeleteFavorite={onDeleteFavorite}
           unit="C"

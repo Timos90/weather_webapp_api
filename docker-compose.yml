@@ -15,6 +15,25 @@ services:
     depends_on:
       - db
 
+  backend-worker:
+    build: ./backend
+    entrypoint: sh # Override the default entrypoint
+    command: >
+      -c "python manage.py migrate --noinput &&
+          echo 'Migrations complete for worker. Starting feedback analyzer loop...' &&
+          python manage.py run_feedback_analyzer_loop --interval 10800"
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PWD}
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+
   frontend:
     build: ./frontend
     ports:

@@ -1,19 +1,18 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, MouseEvent } from 'react';
 import { fetchUserProfile, updateUserProfile } from '../api/user';
 import { fetchFavoriteLocations, removeFromFavorites } from '../api/weather';
 import '../css/UserProfilePage.css';
-import '../css/deleteAnimation.css';
-import { runDeleteAnimation } from '../utils/deleteAnimation.d';
+import '../css/deleteAnimation.css'; 
+import { runDeleteAnimation } from '../utils/deleteAnimation'; 
 import DeleteAccountModal from './DeleteAccountModal';
-import { UserProfileProps as OriginalUserProfileProps, GenderOption } from '../types/types'; // Renamed to avoid conflict
+import { Favorite, UserProfileProps, GenderOption } from '../types/types';
 
-// Extend original props to include the new callback
-interface UserProfileProps extends OriginalUserProfileProps {
+interface UserProfileDisplayProps extends UserProfileProps {
   onProfileDataChange?: (newGender: GenderOption) => void;
+  onTemperatureUnitChange?: (newUnit: 'C' | 'F') => void; 
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUpdated, onProfileDataChange }) => {
+const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onFavoriteClick, onFavoriteUpdated, onProfileDataChange, onTemperatureUnitChange }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -26,8 +25,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [locationError, setLocationError] = useState('');
-  const [favorites, setFavorites] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
@@ -42,18 +43,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
           setLastName(data.user.last_name);
           setGender(data.gender as GenderOption);
         })
-        .catch(() => setGeneralError('Unable to fetch user profile.'));
+        .catch(() => setGeneralError('Unable to fetch user profile. Please try again later.'));
 
       fetchFavoriteLocations()
         .then(setFavorites)
-        .catch(() => setGeneralError('Unable to fetch favorite locations.'));
+        .catch(() => setGeneralError('Unable to fetch favorite locations. Please try again later.'));
     }
   }, []);
 
   const handleToggleUnit = async () => {
     const newUnit = preferredTemperatureUnit === 'C' ? 'F' : 'C';
-    setPreferredTemperatureUnit(newUnit);
-
+    setGeneralError(null);
+    setSuccessMessage(null);
     try {
       const updatedProfile = await updateUserProfile({
         preferred_temperature_unit: newUnit,
@@ -62,29 +63,39 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         first_name: firstName,
         last_name: lastName,
         username,
-        gender: gender,
+        gender,
       });
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
       setGender(updatedProfile.gender as GenderOption);
-      // Call the callback with the new gender
-      if (updatedProfile.gender) {
-        onProfileDataChange?.(updatedProfile.gender as GenderOption);
+      setSuccessMessage('Temperature unit preference updated successfully!');
+      if (onTemperatureUnitChange) {
+        onTemperatureUnitChange(updatedProfile.preferred_temperature_unit);
+      }
+      if (updatedProfile.gender && onProfileDataChange) {
+        onProfileDataChange(updatedProfile.gender as GenderOption);
       }
     } catch (err) {
-      setGeneralError('Failed to update unit preference.');
+      setPreferredTemperatureUnit(preferredTemperatureUnit === 'C' ? 'F' : 'C');
+      if (err instanceof Error) {
+        setGeneralError(`Failed to update unit preference: ${err.message}`);
+      } else {
+        setGeneralError('Failed to update unit preference. An unknown error occurred.');
+      }
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (event?: React.FormEvent<HTMLFormElement>) => {
+    if (event) event.preventDefault();
     setUsernameError('');
     setEmailError('');
     setFirstNameError('');
     setLastNameError('');
     setLocationError('');
     setGeneralError(null);
+    setSuccessMessage(null);
 
     try {
-      const updatedProfile = await updateUserProfile({
+      const updatedProfileData = {
         username,
         email,
         first_name: firstName,
@@ -92,7 +103,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
         location,
         preferred_temperature_unit: preferredTemperatureUnit,
         gender: gender,
-      });
+      };
+      const updatedProfile = await updateUserProfile(updatedProfileData);
 
       setUsername(updatedProfile.user.username);
       setEmail(updatedProfile.user.email);
@@ -101,35 +113,29 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
       setLocation(updatedProfile.location);
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
       setGender(updatedProfile.gender as GenderOption);
-      // Call the callback with the new gender
-      if (updatedProfile.gender) {
-        onProfileDataChange?.(updatedProfile.gender as GenderOption);
+      setSuccessMessage('Profile updated successfully!');
+      if (updatedProfile.gender && onProfileDataChange) {
+        onProfileDataChange(updatedProfile.gender as GenderOption);
       }
-
-      alert('Profile updated successfully!');
-    } catch (err) {
-      if (err instanceof Error) {
+    } catch (err: any) { // Catch as 'any' to inspect its properties
+      // Check for our custom API error structure
+      if (err && err.isApiError && err.message) {
         parseAndAssignErrors(err.message);
+      } else if (err instanceof Error) { // Fallback for other types of errors
+        setGeneralError(`Failed to update profile: ${err.message}`);
       } else {
-        setGeneralError('Failed to update profile.');
+        setGeneralError('Failed to update profile. An unknown error occurred.');
       }
     }
   };
 
   const parseAndAssignErrors = (msg: string) => {
-    if (msg.includes('username')) {
-      setUsernameError(msg);
-    } else if (msg.includes('email')) {
-      setEmailError(msg);
-    } else if (msg.includes('location')) {
-      setLocationError(msg);
-    } else if (msg.includes('first_name')) {
-      setFirstNameError(msg);
-    } else if (msg.includes('last_name')) {
-      setLastNameError(msg);
-    } else {
-      setGeneralError(msg);
-    }
+    if (msg.toLowerCase().includes('username')) setUsernameError(msg);
+    else if (msg.toLowerCase().includes('email')) setEmailError(msg);
+    else if (msg.toLowerCase().includes('location')) setLocationError(msg);
+    else if (msg.toLowerCase().includes('first name') || msg.toLowerCase().includes('first_name')) setFirstNameError(msg);
+    else if (msg.toLowerCase().includes('last name') || msg.toLowerCase().includes('last_name')) setLastNameError(msg);
+    else setGeneralError(msg);
   };
 
   const handleDeleteFavorite = async (
@@ -137,232 +143,186 @@ const UserProfile: React.FC<UserProfileProps> = ({ onFavoriteClick, onFavoriteUp
     country_code: string,
     latitude: number,
     longitude: number,
-    e: React.MouseEvent<HTMLButtonElement>
+    e: MouseEvent<HTMLButtonElement>
   ) => {
-    try {
-      const btn = e.currentTarget;
-      runDeleteAnimation(btn);
+    const btn = e.currentTarget;
+    runDeleteAnimation(btn);
+    setGeneralError(null);
+    setSuccessMessage(null);
 
-      setTimeout(async () => {
+    setTimeout(async () => {
+      try {
         await removeFromFavorites(city_name, country_code, latitude, longitude);
-
         setFavorites((prev) =>
           prev.filter(
             (f) =>
-              !(
-                f.city_name === city_name &&
-                f.country_code === country_code &&
-                f.latitude === latitude &&
-                f.longitude === longitude
-              )
+              !(f.city_name === city_name && f.country_code === country_code && f.latitude === latitude && f.longitude === longitude)
           )
         );
-
         onFavoriteUpdated?.();
-      }, 1500);
-    } catch (error) {
-      if (error instanceof Error) {
-        setGeneralError(error.message);
-      } else {
-        setGeneralError('Failed to remove location from favorites.');
+      } catch (error) {
+        if (error instanceof Error) {
+          setGeneralError(`Failed to remove ${city_name}: ${error.message}`);
+        } else {
+          setGeneralError(`Failed to remove ${city_name}. An unknown error occurred.`);
+        }
+        btn.classList.remove('deleting');
       }
+    }, 1500);
+  };
+  
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newGenderValue = e.target.value as GenderOption | '';
+    const newGender = newGenderValue === '' ? undefined : newGenderValue;
+    setGender(newGender);
+    if (newGender && onProfileDataChange) {
+       // Call onProfileDataChange immediately if gender is part of outfit advice logic that needs instant update
+       // However, current setup saves gender with the main form save.
     }
   };
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   return (
-    <div className="user-profile-container">
-      {generalError && <p style={{ color: 'red' }}>{generalError}</p>}
+    <div className="user-profile-page">
+      {generalError && <div className="error-message">{generalError}</div>}
+      {successMessage && <div className="success-message">{successMessage}</div>}
 
-      <h1>Hello {username}</h1>
+      <form onSubmit={handleSave}>
+        <div className="profile-section">
+          <h2>Profile Details</h2>
+          <label htmlFor="username">Username:</label>
+          <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          {usernameError && <p className="error-text">{usernameError}</p>}
 
-      <div>
-        <label>Username:</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        {usernameError && <p style={{ color: 'red' }}>{usernameError}</p>}
-      </div>
+          <label htmlFor="email">Email:</label>
+          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          {emailError && <p className="error-text">{emailError}</p>}
 
-      <div>
-        <label>Location:</label>
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-        {locationError && <p style={{ color: 'red' }}>{locationError}</p>}
-      </div>
+          <label htmlFor="firstName">First Name:</label>
+          <input type="text" id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          {firstNameError && <p className="error-text">{firstNameError}</p>}
 
-      <div style={{ margin: '10px 0', display: 'flex', alignItems: 'center' }}>
-        <label style={{ marginRight: '8px' }}>Preferred Temperature Unit:</label>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={preferredTemperatureUnit === 'F'}
-            onChange={handleToggleUnit}
-          />
-          <span className="slider round"></span>
-        </label>
-        <span style={{ marginLeft: '0.5rem' }}>
-          {preferredTemperatureUnit === 'C' ? 'Celsius' : 'Fahrenheit'}
-        </span>
-      </div>
+          <label htmlFor="lastName">Last Name:</label>
+          <input type="text" id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          {lastNameError && <p className="error-text">{lastNameError}</p>}
 
-      <div>
-        <label>Gender:</label>
-        <select
-          id="gender-select"
-          data-testid="gender-select"
-          value={gender || ''}
-          onChange={(e) => setGender(e.target.value as GenderOption)}
-        >
-          <option value="" disabled={gender !== undefined}>Select Gender</option>
-          <option value="Man">Man</option>
-          <option value="Woman">Woman</option>
-          <option value="Non-binary">Non-binary</option>
-        </select>
-      </div>
+          <label htmlFor="location">Location:</label>
+          <input type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
+          {locationError && <p className="error-text">{locationError}</p>}
+        </div>
 
-      <div>
-        <label>Email:</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        {emailError && <p style={{ color: 'red' }}>{emailError}</p>}
-      </div>
-
-      <div>
-        <label>First Name:</label>
-        <input
-          type="text"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-        />
-        {firstNameError && <p style={{ color: 'red' }}>{firstNameError}</p>}
-      </div>
-
-      <div>
-        <label>Last Name:</label>
-        <input
-          type="text"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
-        {lastNameError && <p style={{ color: 'red' }}>{lastNameError}</p>}
-      </div>
-
-      <button className="save-btn" onClick={handleSave}>Save Changes</button>
-
-      <button className="delete-account" onClick={() => setShowDeleteModal(true)}>
-        Delete Account
-      </button>
-
-      {showDeleteModal && (
-        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
-      )}
-
-      <div className="favorites">
-        <h3>Your Favorite Locations:</h3>
-        {favorites.length > 0 ? (
-          <ul>
-            {favorites.map((fav) => (
-              <li
-                key={fav.id}
-                style={{ cursor: 'pointer', marginBottom: '5px' }}
-                onClick={() => onFavoriteClick(fav.city_name)}
+        <div className="profile-section preferences-section"> {/* Added 'preferences-section' class */}
+          <h2>Preferences</h2>
+          
+          <div className="preference-item"> {/* Wrapper for Temperature Unit */}
+            <label htmlFor="temperatureUnit">Preferred Temperature Unit:</label>
+            <div className="preference-control-container">
+              <p className="current-preference-display">Currently: &deg;{preferredTemperatureUnit}</p>
+              <button 
+                type="button" 
+                onClick={handleToggleUnit} 
+                className="styled-button-secondary toggle-unit-button" /* Added 'toggle-unit-button' class */
               >
-                <span className="favorite-text">{fav.city_name}, {fav.country_code}</span>
-                <button
-                  className="del-btn"
-                  data-running="false"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteFavorite(
-                      fav.city_name,
-                      fav.country_code,
-                      fav.latitude,
-                      fav.longitude,
-                      e
-                    );
+                Switch to &deg;{preferredTemperatureUnit === 'C' ? 'F' : 'C'}
+              </button>
+            </div>
+          </div>
+
+          <div className="preference-item"> {/* Wrapper for Gender */}
+            <label htmlFor="gender">Gender (for outfit advice):</label>
+            <div className="preference-control-container">
+              <select id="gender" value={gender || ''} onChange={handleGenderChange}>
+                <option value="">Prefer not to say</option>
+                <option value="Man">Man</option>
+                <option value="Woman">Woman</option>
+                <option value="Non-binary">Non-binary</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div className="profile-section">
+          <button type="submit" className="styled-button-primary">Save Changes</button>
+        </div>
+      </form>
+
+      <div className="profile-section favorites">
+        <h2>Your Favorite Locations</h2>
+        {favorites.length > 0 ? (
+          <ul className="favorites-list">
+            {favorites.map((fav) => (
+              <li key={`${fav.city_name}-${fav.latitude}-${fav.longitude}`}>
+                <span
+                  onClick={() => onFavoriteClick && onFavoriteClick(fav.city_name)}
+                  className="favorite-name"
+                  role="button"
+                  tabIndex={0}
+                  onKeyUp={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onFavoriteClick && onFavoriteClick(fav.city_name);
+                    }
                   }}
                 >
-                  <svg
-                    className="del-btn__icon"
-                    viewBox="0 0 48 48"
-                    width="48"
-                    height="48"
-                    aria-hidden="true"
+                  {fav.city_name}, {fav.country_code.toUpperCase()}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteFavorite(fav.city_name, fav.country_code, fav.latitude, fav.longitude, e)}
+                  className="delete-favorite-button del-btn styled-button-danger"
+                  aria-label={`Remove ${fav.city_name} from favorites`}
+                >
+                  <svg 
+                    className="del-btn__icon" 
+                    viewBox="0 0 24 24" 
+                    width="18" height="18" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth="2"
                   >
-                    <clipPath id="can-clip">
-                      <rect
-                        className="del-btn__icon-can-fill"
-                        x="5"
-                        y="24"
-                        width="14"
-                        height="11"
-                      />
-                    </clipPath>
-                    <g
-                      fill="none"
-                      stroke="#fff"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      transform="translate(12,12)"
-                    >
-                      <g className="del-btn__icon-lid">
-                        <polyline points="9,5 9,1 15,1 15,5" />
-                        <polyline points="4,5 20,5" />
-                      </g>
-                      <g className="del-btn__icon-can">
-                        <g strokeWidth="0">
-                          <polyline id="can-fill" points="6,10 7,23 17,23 18,10" />
-                          <use
-                            clipPath="url(#can-clip)"
-                            href="#can-fill"
-                            fill="#fff"
-                          />
-                        </g>
-                        <polyline points="6,10 7,23 17,23 18,10" />
-                      </g>
+                    <g className="del-btn__icon-lid">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      {/* Path for the lid handle part, M8 6 V4 A2 2 0 0 1 10 2 H14 A2 2 0 0 1 16 4 V6 */}
+                      <path d="M8 6V4A2 2 0 0 1 10 2H14A2 2 0 0 1 16 4V6"></path>
+                    </g>
+                    <g className="del-btn__icon-can">
+                      {/* Path for the can body part, M19 6V20 A2 2 0 0 1 17 22 H7 A2 2 0 0 1 5 20 V6 */}
+                      <path d="M19 6V20A2 2 0 0 1 17 22H7A2 2 0 0 1 5 20V6"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
                     </g>
                   </svg>
                   <span className="del-btn__letters">
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">R</span>
-                    </span>
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">E</span>
-                    </span>
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">M</span>
-                    </span>
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">O</span>
-                    </span>
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">V</span>
-                    </span>
-                    <span className="del-btn__letter-box">
-                      <span className="del-btn__letter">E</span>
-                    </span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">R</span></span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">E</span></span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">M</span></span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">O</span></span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">V</span></span>
+                    <span className="del-btn__letter-box"><span className="del-btn__letter">E</span></span>
                   </span>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <p>No favorite locations added yet.</p>
+          <p>You have no favorite locations yet. Add some from the map!</p>
         )}
       </div>
+
+      <div className="profile-section account-actions">
+        <h2>Account Actions</h2>
+        <button type="button" onClick={() => setShowDeleteModal(true)} className="delete-account-button styled-button-danger">
+          Delete My Account
+        </button>
+      </div>
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   );
 };
 
-export default UserProfile;
+export default UserProfileDisplay;

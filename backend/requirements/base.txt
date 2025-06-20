@@ -1,3 +1,7 @@
 Django==5.0.6
+djangorestframework==3.15.2
+requests==2.32.3
+python-dotenv==1.0.1
+pycountry==23.12.11
 environs==11.0.0
 dj-rest-auth==6.0.0

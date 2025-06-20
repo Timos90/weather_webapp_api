@@ -58,7 +58,7 @@ class AlertSerializerTest(TestCase):
     def test_invalid_alert_serializer(self):
         serializer = AlertSerializer(data=self.invalid_data)
         self.assertFalse(serializer.is_valid())
-        self.assertIn('non_field_errors', serializer.errors)
+        self.assertIn('time_validation', serializer.errors)
 
 
 # Test ForecastSerializer

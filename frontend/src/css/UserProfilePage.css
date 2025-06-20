@@ -1,134 +1,296 @@
-.user-profile-container {
-  background: #f9f9f9;
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  max-width: 37.5rem; /* 600px */
-  margin: 2.5rem auto; /* 40px */
-  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
+:root {
+  /* Colors */
+  --color-primary-green: #28a745;
+  --color-primary-green-hover: #218838;
+  --color-danger-red: #e74c3c;
+  --color-danger-red-hover: #c0392b;
+  --color-text-dark: #222;
+  --color-text-medium: #444;
+  --color-text-light: #fff;
+  --color-border-light: #ccc;
+  --color-border-medium: #cbd5e0;
+  --color-background-light: #f9f9f9;
+  --color-background-gradient-start: #f7f9fc;
+  --color-background-gradient-end: #e4e9f0;
+  --color-shadow-light: rgba(0, 0, 0, 0.1);
+  --color-shadow-extra-light: rgba(0, 0, 0, 0.05);
+  --color-shadow-hover-accent: rgb(64, 161, 218);
+
+  /* Typography */
+  --font-family-primary: 'Arial', sans-serif;
+  --font-size-base: 1rem; /* Assuming 16px base for rem calculations */
+  --font-size-xs: 0.8125rem; /* 13px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1em; /* context-dependent, often 1rem */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-xxl: 1.5rem; /* 24px */
+  --font-size-favorite-text: 1.2em; /* context-dependent */
+
+  /* Spacing & Sizing */
+  --spacing-unit: 0.25rem; /* 4px, base unit for multiples */
+  --spacing-xxs: var(--spacing-unit);      /* 0.25rem / 4px */
+  --spacing-xs: calc(var(--spacing-unit) * 2);  /* 0.5rem / 8px */
+  --spacing-sm: calc(var(--spacing-unit) * 2.5);/* 0.625rem / 10px */
+  --spacing-md: calc(var(--spacing-unit) * 3);  /* 0.75rem / 12px */
+  --spacing-lg: calc(var(--spacing-unit) * 3.75);/* 0.9375rem / 15px */
+  --spacing-xl: calc(var(--spacing-unit) * 5);  /* 1.25rem / 20px */
+  --spacing-xxl: calc(var(--spacing-unit) * 6.25);/* 1.5625rem / 25px */
+  --spacing-xxxl: calc(var(--spacing-unit) * 10); /* 2.5rem / 40px */
+
+  /* Borders & Radii */
+  --border-radius-sm: 0.25rem; /* 4px */
+  --border-radius-md: 0.5rem;  /* 8px */
+  --border-width-thin: 0.0625rem; /* 1px */
+  --border-width-medium: 0.125rem; /* 2px */
+
+  /* Other */
+  --container-max-width: 37.5rem; /* 600px */
+  --transition-duration: 0.3s;
+  --transition-duration-fast: 0.2s;
 }
 
-.user-profile-container h1 {
-  font-size: 1.5rem; /* 24px */
+.user-profile-page {
+  background: var(--color-background-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-xxl);
+  max-width: var(--container-max-width);
+  max-height: 85vh; /* Limit height to 85% of viewport height */
+  overflow-y: auto; /* Enable vertical scrollbar when content overflows */
+  margin: var(--spacing-xxxl) auto;
+  box-shadow: 0 var(--border-width-medium) var(--spacing-xs) var(--color-shadow-light);
+  font-family: var(--font-family-primary);
+}
+
+.user-profile-page .profile-section h2 {
+  font-size: var(--font-size-xxl); /* Was h1, now general section header */
   text-align: left;
-  color: #222;
-  margin-bottom: 0.9375rem; /* 15px */
+  color: var(--color-text-dark);
+  margin-bottom: var(--spacing-lg);
 }
 
-.user-profile-container label {
+.user-profile-page .profile-section label {
   display: block;
   font-weight: normal;
-  margin-bottom: 0.5rem; /* 8px */
-  color: #444;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-medium);
 }
 
-.user-profile-container input,
-.user-profile-container select {
+.user-profile-page .profile-section input,
+.user-profile-page .profile-section select {
   width: 100%;
-  padding: 0.75rem; /* 12px */
-  font-size: 0.875rem; /* 14px */
-  border: 0.0625rem solid #ccc; /* 1px */
-  border-radius: 0.25rem; /* 4px */
-  margin-bottom: 0.9375rem; /* 15px */
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-lg);
   box-sizing: border-box;
 }
 
-.save-btn {
+/* General message styling */
+.user-profile-page .error-message,
+.user-profile-page .success-message {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--border-radius-sm);
+  text-align: center;
+}
+
+.user-profile-page .error-message {
+  background-color: var(--color-danger-red-hover); /* A bit darker for background */
+  color: var(--color-text-light);
+  border: var(--border-width-thin) solid var(--color-danger-red);
+}
+
+.user-profile-page .success-message {
+  background-color: var(--color-primary-green-hover); /* A bit darker for background */
+  color: var(--color-text-light);
+  border: var(--border-width-thin) solid var(--color-primary-green);
+}
+
+.user-profile-page .profile-section .error-text {
+  color: var(--color-danger-red);
+  font-size: var(--font-size-sm);
+  margin-top: calc(-1 * var(--spacing-lg) + var(--spacing-xxs)); /* Pull up below input */
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Button Styles - Applied to specific classes from UserProfileDisplay.tsx */
+.user-profile-page .styled-button-primary {
   width: 100%;
-  padding: 0.625rem; /* 10px */
-  font-size: 0.875rem; /* 14px */
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
   border: none;
-  border-radius: 0.25rem; /* 4px */
-  background-color: #28a745;
-  color: #fff;
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-primary-green);
+  color: var(--color-text-light);
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-bottom: 0.9375rem; /* 15px */
+  transition: background-color var(--transition-duration) ease;
+  margin-bottom: var(--spacing-lg);
 }
 
-.delete-account {
-  background-color: #e74c3c;
-  color: #fff;
+.user-profile-page .styled-button-primary:hover {
+  background-color: var(--color-primary-green-hover);
+}
+
+.user-profile-page .delete-account-button.styled-button-danger {
+  background-color: var(--color-danger-red);
+  color: var(--color-text-light);
   width: 100%;
-  padding: 0.625rem; /* 10px */
-  font-size: 0.875rem; /* 14px */
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
   border: none;
-  border-radius: 0.25rem; /* 4px */
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--transition-duration) ease;
 }
 
-.save-btn:hover {
-  background-color: #218838;
+.user-profile-page .delete-account-button.styled-button-danger:hover {
+  background-color: var(--color-danger-red-hover);
 }
 
-.delete-account:hover {
-  background-color: #c0392b;
+/* Specific styles for the animated delete favorite button */
+.user-profile-page .profile-section.favorites .delete-favorite-button.del-btn.styled-button-danger {
+  /* Core layout from deleteAnimation.css */
+  display: inline-flex;
+  align-items: center;
+  
+  /* Sizing and shape from deleteAnimation.css */
+  width: auto; 
+  padding: 0.5em 0.75em; 
+  font-size: 0.9em; 
+  border-radius: 3em; 
+  
+  /* Border from deleteAnimation.css */
+  border: 2px solid white; 
+  
+  /* Themed colors */
+  background-color: var(--color-danger-red);
+  color: var(--color-text-light);
+  
+  /* Other properties */
+  cursor: pointer;
+  margin-top: 4px; /* From .del-btn in deleteAnimation.css */
+  margin-bottom: 0; /* Reset margin for layout within li */
+  
+  /* Transition to include border and shadow for hover effect */
+  transition: background-color 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.user-profile-page .profile-section.favorites .delete-favorite-button.del-btn.styled-button-danger:hover {
+  /* Themed background hover, animation's border/shadow for effect */
+  background-color: var(--color-danger-red-hover); 
+  border: 5px solid whitesmoke; /* From .del-btn:hover in deleteAnimation.css */
+  box-shadow: 0 10px 40px rgb(43, 80, 167); /* From .del-btn:hover in deleteAnimation.css */
+}
+
+/* Make the icon smaller within the delete favorite button */
+.user-profile-page .profile-section.favorites .delete-favorite-button.del-btn.styled-button-danger .del-btn__icon {
+  width: 1.5em; /* Original is 3em in deleteAnimation.css */
+  height: 1.5em; /* Original is 3em in deleteAnimation.css */
+  margin: -0.375em 0 -0.375em -0.375em; /* Original is -0.75em for top/left */
 }
 
 /* Favorite Locations */
-.user-profile-container .favorites {
-  margin-top: 1.5625rem; /* 25px */
-  font-size: 0.875rem; /* 14px */
+.user-profile-page .profile-section.favorites {
+  margin-top: var(--spacing-xxl);
+  font-size: var(--font-size-sm);
 }
 
-.user-profile-container .favorites h3 {
-  font-size: 1.125rem; /* 18px */
-  margin-bottom: 0.75rem; /* 12px */
-  color: #222;
-}
+/* .user-profile-page .profile-section.favorites h2 is covered by general .profile-section h2 */
 
-.user-profile-container .favorites ul {
+.user-profile-page .profile-section.favorites .favorites-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.625rem; /* 10px */
+  gap: var(--spacing-sm);
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.user-profile-container .favorites li {
-  flex: 1 1 calc(33.333% - 0.625rem); /* 10px */
-  max-width: calc(33.333% - 0.625rem); /* 10px */
-  background: linear-gradient(135deg, #f7f9fc, #e4e9f0);
-  border: 0.125rem solid #cbd5e0; /* 2px */
-  padding: 0.5rem; /* 8px */
-  border-radius: 0.5rem; /* 8px */
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05); /* 2px, 4px */
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  font-size: 1em;
+.user-profile-page .profile-section.favorites .favorites-list li {
+  flex: 1 1 calc(33.333% - var(--spacing-sm));
+  max-width: calc(33.333% - var(--spacing-sm));
+  background: linear-gradient(135deg, var(--color-background-gradient-start), var(--color-background-gradient-end));
+  border: var(--border-width-medium) solid var(--color-border-medium);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 var(--border-width-medium) var(--border-radius-sm) var(--color-shadow-extra-light);
+  transition: transform var(--transition-duration-fast) ease, box-shadow var(--transition-duration-fast) ease;
+  font-size: var(--font-size-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow: hidden;
 }
 
-.favorites li:hover {
-  transform: translateY(-0.3125rem); /* -5px */
-  box-shadow: 0 0.625rem 2.5rem rgb(64, 161, 218); /* 10px, 40px */
+.user-profile-page .profile-section.favorites .favorites-list li:hover {
+  transform: translateY(calc(-1 * var(--spacing-sm) / 2)); /* Original: -0.3125rem */
+  box-shadow: 0 var(--spacing-sm) var(--spacing-xxxl) var(--color-shadow-hover-accent);
 }
 
-.favorite-text {
+.user-profile-page .profile-section.favorites .favorite-name {
   width: 100%;
   text-align: center;
-  margin-bottom: 0.5rem; /* 8px */
-  font-size: 1.2em;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-favorite-text);
   white-space: normal;
+  cursor: pointer; /* Indicate it's clickable */
+}
+
+/* Preferences Section Structure */
+.user-profile-page .preference-item {
+  display: flex;
+  align-items: center; /* Vertically aligns label and controls */
+  margin-bottom: var(--spacing-lg); /* Space between each preference row */
+  gap: var(--spacing-md); /* Space between label and its control group */
+}
+
+.user-profile-page .preference-item label {
+  flex-basis: 220px; /* Adjust as needed for your longest label */
+  flex-shrink: 0; /* Prevents the label from shrinking */
+  margin-bottom: 0; /* Overrides default label margin if any */
+  text-align: right;
+  padding-right: var(--spacing-md);
+  color: var(--color-text-medium); /* Consistent label color */
+}
+
+.user-profile-page .preference-control-container {
+  flex-grow: 1; /* Allows the control group to take remaining space */
+  display: flex;
+  flex-direction: column; /* Stacks items like "Currently: X" above the button */
+  align-items: flex-start; /* Aligns controls to the start of their container */
+}
+
+.user-profile-page .preference-control-container .current-preference-display {
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-medium);
+}
+
+/* Ensure select dropdowns and buttons in this section don't take full width by default */
+.user-profile-page .preference-control-container select,
+.user-profile-page .preference-control-container .toggle-unit-button {
+  width: auto; /* Allow them to size based on content or a more specific width */
+  min-width: 180px; /* Example: ensure a decent minimum width for select */
+  margin-bottom: 0; /* Reset bottom margin if inherited */
+  padding: var(--spacing-sm) var(--spacing-md); /* Adjust padding if needed */
+  background-color: rgba(201, 198, 198, 0.795);
 }
 
 /* Responsive adjustments */
 @media (max-width: 48rem) { /* 768px */
-  .user-profile-container {
-    margin: 1.25rem auto; /* 20px */
-    padding: 0.9375rem; /* 15px */
+  .user-profile-page {
+    margin: var(--spacing-xl) auto;
+    padding: var(--spacing-lg);
   }
-  .user-profile-container h1 {
-    font-size: 1.25rem; /* 20px */
+  .user-profile-page .profile-section h2 {
+    font-size: var(--font-size-xl);
   }
-  .user-profile-container input,
-  .user-profile-container select {
-    padding: 0.625rem; /* 10px */
-    font-size: 0.8125rem; /* 13px */
+  .user-profile-page .profile-section input,
+  .user-profile-page .profile-section select {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
   }
 }
 

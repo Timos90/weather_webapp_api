@@ -1,7 +1,8 @@
 export interface WeatherDisplayProps {
   title: string;
-  data: any;
+  data: APICurrentWeather | ForecastSlot | undefined;
   unit: 'C' | 'F';
+  displayedLocationName?: string;
 }
 
 export interface ForecastSlot {
@@ -105,6 +106,8 @@ export type GenderOption = "Man" | "Woman" | "Non-binary";
 export interface Favorite {
   city_name: string;
   country_code: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface UserProfile {

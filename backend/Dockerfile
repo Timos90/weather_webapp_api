@@ -4,7 +4,12 @@ WORKDIR /backend
 
 COPY requirements/base.txt .
 COPY requirements/prod.txt .
-RUN pip install --upgrade pip && pip install -r prod.txt
+
+ENV DJANGO_SETTINGS_MODULE=config.settings.dev
+
+RUN apt-get update && \
+    pip install --upgrade pip && pip install -r prod.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY . /backend
 
 EXPOSE 8000
