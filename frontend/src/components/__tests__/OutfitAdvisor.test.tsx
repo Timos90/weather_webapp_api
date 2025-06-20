@@ -42,18 +42,7 @@ const mockWeatherDataDefault: personalizationApi.FrontendWeatherData = {
   unit: 'C', // Added unit for testing
 };
 
-const mockWeatherDataFahrenheit: personalizationApi.FrontendWeatherData = {
-  temperature: 68, // 20C
-  feelsLike: 66, // ~19C
-  precipitationChance: 10,
-  windSpeed: 5,
-  uvIndex: 3,
-  weatherDescription: 'Partly cloudy',
-  weatherMain: 'Clouds',
-  isDay: true,
-  datetime: '2024-05-29T13:00:00Z',
-  unit: 'F', // Added unit for testing
-};
+
 
 // Use one as the default for most tests, can be overridden
 const mockWeatherData: personalizationApi.FrontendWeatherData = mockWeatherDataDefault;

@@ -10,7 +10,7 @@ import { render, screen } from '@testing-library/react';
  
  describe('NewsDisplay Component', () => {
    test('renders no news message when articles array is empty', () => {
-     render(<NewsDisplay articles={[]} />);
+     render(<NewsDisplay articles={[]} loading={false} />);
      expect(screen.getByText('No news available.')).toBeInTheDocument();
    });
  
@@ -31,7 +31,7 @@ import { render, screen } from '@testing-library/react';
          content: 'An update on the rainy evening weather.',
        },
      ];
-     render(<NewsDisplay articles={articles} />);
+     render(<NewsDisplay articles={articles} loading={false} />);
  
      // Slider is rendered
      expect(screen.getByTestId('slider')).toBeInTheDocument();
@@ -57,7 +57,7 @@ import { render, screen } from '@testing-library/react';
        publishedAt: '2023-03-10T09:45:00Z',
        content: 'A warning about an upcoming storm.',
      };
-     render(<NewsDisplay articles={[article]} />);
+     render(<NewsDisplay articles={[article]} loading={false} />);
  
      const img = screen.getByRole('img');
      expect(img).toHaveAttribute('src', article.urlToImage);
@@ -72,7 +72,7 @@ import { render, screen } from '@testing-library/react';
        publishedAt: '2023-04-05T22:15:00Z',
        content: 'A clear night with no clouds in sight.',
      };
-     render(<NewsDisplay articles={[article]} />);
+     render(<NewsDisplay articles={[article]} loading={false} />);
  
      // No img in the document
      expect(screen.queryByRole('img')).toBeNull();
@@ -86,7 +86,7 @@ import { render, screen } from '@testing-library/react';
        publishedAt: '2023-05-20T06:00:00Z',
        content: 'A serene morning with dew on the grass.',
      };
-     render(<NewsDisplay articles={[article]} />);
+     render(<NewsDisplay articles={[article]} loading={false} />);
  
      const dateString = new Date(article.publishedAt).toLocaleDateString();
      expect(screen.getByText(dateString, { exact: false })).toBeInTheDocument();
