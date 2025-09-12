@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,7 +20,7 @@ class OutfitFeedbackView(generics.CreateAPIView):
     """
     queryset = OutfitFeedback.objects.all() # Required for CreateAPIView
     serializer_class = OutfitFeedbackSerializer
-    authentication_classes = [TokenAuthentication] # Consistent with other protected views
+    authentication_classes = [JWTAuthentication] # Use JWT for consistency with the project
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -29,13 +29,22 @@ class OutfitFeedbackView(generics.CreateAPIView):
 
         # Extract and process weather_data for temperature conversion
         # We need a mutable copy if we are to change it before saving
-        processed_weather_data = dict(serializer.validated_data.get('weather_data', {}))
-        original_unit = processed_weather_data.pop('unit', 'C') # Pop unit, default to 'C'
+        raw_weather_data = dict(serializer.validated_data.get('weather_data', {}))
+        original_unit = raw_weather_data.pop('unit', 'C')
 
-        temp_keys_to_convert = ['feels_like', 'temperature'] # Add any other relevant temp keys
-        for key in temp_keys_to_convert:
-            if key in processed_weather_data and processed_weather_data[key] is not None:
-                processed_weather_data[key] = convert_to_celsius(processed_weather_data[key], original_unit)
+        processed_weather_data = {}
+        for key, value in raw_weather_data.items():
+            if value is None:
+                continue
+
+            if key == 'temperature':
+                processed_weather_data['temperature'] = convert_to_celsius(value, original_unit)
+            elif key == 'feelsLike':
+                # Convert and rename the key to snake_case
+                processed_weather_data['feels_like'] = convert_to_celsius(value, original_unit)
+            else:
+                # Preserve other keys
+                processed_weather_data[key] = value
         
         # Update validated_data with processed weather_data for perform_create
         # This is a bit indirect; ideally, this transformation happens earlier or within serializer validation.
@@ -104,6 +113,7 @@ class OutfitSuggestionView(APIView):
         if request_serializer.is_valid():
             weather_data_validated = request_serializer.validated_data
             user_gender = weather_data_validated.pop('user_gender', None)
+            occasion = weather_data_validated.pop('occasion', None) # Get occasion
             unit = weather_data_validated.pop('unit', 'C') # Get unit, default to 'C'
             alerts_data = weather_data_validated.pop('alerts', None) # Get alerts, default to None
 
@@ -129,9 +139,10 @@ class OutfitSuggestionView(APIView):
             # The suggest_outfit_py expects all weather keys, even if None
             # The serializer ensures required keys are present or provides defaults (like None for optional)
             suggested_items_list, advice_strings_list = suggest_outfit_py(
-                weather_data_for_logic,
-                user_gender,
-                user_profile_instance
+                weather_data=weather_data_for_logic,
+                user_gender=user_gender,
+                occasion=occasion,
+                user_id=user_profile_instance.id if user_profile_instance else None
             )
             
             response_data = {

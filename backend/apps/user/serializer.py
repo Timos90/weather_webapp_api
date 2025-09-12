@@ -34,15 +34,44 @@ class UserSerializer(serializers.ModelSerializer):
         fields= ['email', 'first_name', 'last_name', 'username'] 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    # Apply no_emoji_validator in addition to any existing validators if needed.
-    # For location, we'll ensure it's applied here for profile updates.
-    location = serializers.CharField(validators=[no_emoji_validator])
-    user = UserSerializer(read_only=True)
-    gender = serializers.ChoiceField(choices=GENDER_CHOICES, required=False, allow_blank=True, allow_null=True)
+    username = serializers.CharField(source='user.username', validators=[no_emoji_validator])
+    email = serializers.EmailField(source='user.email')
+    first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True, validators=[no_emoji_validator])
+    last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True, validators=[no_emoji_validator])
 
     class Meta:
         model = UserProfile
-        fields = ['user', 'location', 'preferred_temperature_unit', 'gender']
+        fields = ['username', 'email', 'first_name', 'last_name', 'location', 'preferred_temperature_unit', 'gender']
+
+    def validate_username(self, value):
+        # self.instance is the UserProfile object. self.instance.user is the User.
+        if self.instance and User.objects.filter(username=value).exclude(pk=self.instance.user.pk).exists():
+            raise serializers.ValidationError("This username is already in use.")
+        return value
+
+    def validate_email(self, value):
+        if self.instance and User.objects.filter(email=value).exclude(pk=self.instance.user.pk).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        
+        # Update UserProfile fields
+        instance.location = validated_data.get('location', instance.location)
+        instance.preferred_temperature_unit = validated_data.get('preferred_temperature_unit', instance.preferred_temperature_unit)
+        instance.gender = validated_data.get('gender', instance.gender)
+        instance.save()
+
+        # Update User fields
+        user = instance.user
+        user.username = user_data.get('username', user.username)
+        user.email = user_data.get('email', user.email)
+        user.first_name = user_data.get('first_name', user.first_name)
+        user.last_name = user_data.get('last_name', user.last_name)
+        user.save()
+
+        return instance
 
 class RegistrationSerializer(serializers.Serializer):
     username   = serializers.CharField(validators=[no_emoji_validator])

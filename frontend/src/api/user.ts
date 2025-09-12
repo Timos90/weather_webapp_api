@@ -3,16 +3,19 @@ import { GenderOption } from '../types/types';
 
 const BASE_URL = import.meta.env.VITE_BASE_USER_URL;
 
-export const getAuthToken = (): string | null => sessionStorage.getItem('auth_token');
+export const getAccessToken = (): string | null => sessionStorage.getItem('access_token');
+export const getRefreshToken = (): string | null => sessionStorage.getItem('refresh_token');
 
 export const loginUser = async (username: string, password: string) => {
-  const url = buildUrl(BASE_URL, '/login/', {});
+  const API_ROOT_URL = import.meta.env.VITE_BASE_USER_URL.replace('/user', '');
+  const url = `${API_ROOT_URL}/token/`;
   const data = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     data: { username, password },
   });
-  sessionStorage.setItem('auth_token', data.token);
+  sessionStorage.setItem('access_token', data.access);
+  sessionStorage.setItem('refresh_token', data.refresh);
   return data;
 };
 
@@ -45,23 +48,20 @@ export const registerUser = async (
 };
 
 export const fetchUserProfile = async () => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
   const url = buildUrl(BASE_URL, '/profile/', {});
-  return apiRequest(url, {
-    headers: { Authorization: `Token ${token}` },
-  });
+  return apiRequest(url, {});
 };
 
 export const logoutUser = async () => {
-  const token = sessionStorage.getItem('auth_token');
-  if (!token) throw new Error('Not logged in');
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('Not logged in');
   await apiRequest(buildUrl(BASE_URL, '/logout/', {}), {
     method: 'POST',
-    headers: { Authorization: `Token ${token}` },
-    data: {},
+    headers: { 'Content-Type': 'application/json' },
+    data: { refresh: refreshToken },
   });
-  sessionStorage.removeItem('auth_token');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('refresh_token');
 };
 
 export const updateUserProfile = async (profileData: {
@@ -73,31 +73,26 @@ export const updateUserProfile = async (profileData: {
   username?: string;
   gender?: GenderOption;
 }) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
   const url = buildUrl(BASE_URL, '/profile/', {});
   return apiRequest(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Token ${token}`,
     },
     data: profileData,
   });
 };
 
 export const deleteUserAccount = async (email: string) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
   const url = buildUrl(BASE_URL, '/delete_account/', {});
   const data = await apiRequest(url, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Token ${token}`,
     },
     data: { email },
   });
-  sessionStorage.removeItem('auth_token');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('refresh_token');
   return data;
 };

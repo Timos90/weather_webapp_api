@@ -8,7 +8,7 @@ import {
   removeFromFavorites,
   fetchAlerts, // Added fetchAlerts
 } from '../api/weather';
-import { fetchUserProfile } from '../api/user';
+import { fetchUserProfile, logoutUser, getAccessToken } from '../api/user';
 import WeatherDisplay from '../components/WeatherDisplay';
 import ForecastDisplay from '../components/ForecastDisplay';
 import NewsDisplay from '../components/NewsDisplay';
@@ -19,7 +19,7 @@ import MapComponent from '../components/MapComponent';
 import GeolocationPrompt from '../components/GeolocationPrompt';
 import OutfitAdvisor from '../components/OutfitAdvisor';
 import '../css/HomePage.css';
-import { ForecastItem, NewsArticle, APICurrentWeather, ForecastSlot, GenderOption } from '../types/types';
+import { ForecastItem, NewsArticle, APICurrentWeather, ForecastSlot, GenderOption, UserProfileData } from '../types/types';
 import { FrontendWeatherData, WeatherAlert } from '../api/personalization'; // Added WeatherAlert
 
 const ProfileModal = lazy(() => import('../components/ProfileModal'));
@@ -36,11 +36,12 @@ const HomePage = () => {
   const [layer, setLayer] = useState('temp_new');
   const [favorites, setFavorites] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const isAuthenticated = Boolean(sessionStorage.getItem('auth_token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getAccessToken()));
   const [unit, setUnit] = useState<'C' | 'F'>('C');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAdviceModal, setShowAdviceModal] = useState(false);
   const [userGender, setUserGender] = useState<GenderOption | undefined>();
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false); // Added loading state
   // currentWeatherAdvice state was already declared, ensuring it's correctly defined here
@@ -164,17 +165,15 @@ const HomePage = () => {
     let userPref: 'C' | 'F' = 'C';
 
     const doProfile = async () => {
-      if (isAuthenticated) {
-        try {
-          const profile = await fetchUserProfile();
-          userPref = profile.preferred_temperature_unit === 'F' ? 'F' : 'C';
-          setUnit(userPref);
-          if (profile.gender) {
-            setUserGender(profile.gender as GenderOption);
-          }
-        } catch (err) {
-          console.error('Could not fetch user profile for unit and gender:', err);
+      if (!isAuthenticated) return;
+      try {
+        const profile = await fetchUserProfile();
+        setUserProfile(profile);
+        if (profile && profile.gender) {
+          setUserGender(profile.gender as GenderOption);
         }
+      } catch (error) {
+        console.error('Failed to fetch user profile for gender:', error);
       }
     };
 
@@ -372,26 +371,50 @@ const HomePage = () => {
     setLayer(newLayer);
   };
 
-  const handleProfileGenderChange = (newGender: GenderOption) => {
-    setUserGender(newGender);
+  const handleProfileUpdate = async () => {
+    try {
+      const profile = await fetchUserProfile();
+      setUserProfile(profile);
+      if (profile && profile.gender) {
+        setUserGender(profile.gender as GenderOption);
+      }
+    } catch (error) {
+      console.error('Failed to refetch user profile after update:', error);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    refetchFavorites(); // Refetch favorites after login
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      setIsAuthenticated(false);
+      alert('You have been logged out.');
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Failed to log out. Please try again.');
+    }
   };
 
   return (
     <div className={`home-page ${isAuthenticated ? 'logged-in-active' : ''}`}>
       <div className="top-bar">
         <NavBar
-          onSearch={(loc) => handleSearch(loc)}
-          unit={unit} // Pass unit state to NavBar
-          currentLocation={
-            currentWeather?.sys?.country
-              ? `${location}, ${currentWeather.sys.country}`
-              : location
-          }
+          isAuthenticated={isAuthenticated}
+          onLoginSuccess={handleLoginSuccess}
+          onLogout={handleLogout}
+          onSearch={handleSearch}
+          currentLocation={location}
           onProfileClick={() => setShowProfileModal(true)}
           favorites={favorites}
           onAddFavorite={handleAddFavoriteCurrent}
           onDeleteFavorite={handleDeleteFavoriteCurrent}
           onUnitChange={handleUnitChange}
+          unit={unit}
         />
         {!location &&
           !sessionStorage.getItem('geo_permission') &&
@@ -467,8 +490,10 @@ const HomePage = () => {
                 setShowProfileModal(false);
               }}
               onFavoriteUpdated={refetchFavorites}
-              onProfileDataChange={handleProfileGenderChange}
+              onProfileDataChange={handleProfileUpdate}
               onTemperatureUnitChange={handleUnitChange}
+              profile={userProfile}
+              favorites={favorites}
             />
           </ProfileModal>
         </Suspense>

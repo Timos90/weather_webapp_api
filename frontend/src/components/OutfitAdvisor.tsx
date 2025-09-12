@@ -34,6 +34,7 @@ interface SingleOutfitAdviceProps {
   /** A title for this specific advice section (e.g., "Current Conditions", "3:00 PM"). */
   title: string;
   userGender?: GenderOption;
+  occasion?: string;
 }
 
 /**
@@ -82,7 +83,7 @@ const OUTFIT_ITEM_NAMES: { [key: string]: string } = {
  * @param {SingleOutfitAdviceProps} props - The props for the component.
  * @returns {React.ReactElement} The rendered single outfit advice section.
  */
-export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherData, title, userGender }) => {
+export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherData, title, userGender, occasion }) => {
   /** 
    * State for storing the outfit suggestion data fetched from the API.
    * It holds the response from `getOutfitSuggestions`, including suggested items and advice strings.
@@ -96,98 +97,79 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(true);
   /** 
    * State for storing any error message that occurs while fetching outfit suggestions.
-   * `null` if no error, or a string message if an error occurs. Displayed to the user.
+   * `null` if no error, or a string message if an error occurs.
    */
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
-
   /** 
-   * State to track if the user has already submitted feedback (liked/disliked) for the current suggestion.
-   * Used to disable feedback buttons after a vote to prevent multiple submissions.
-   * Set to `true` after a successful feedback submission or if a 409 conflict (already voted) is received.
+   * State to track if the user has already submitted feedback for this suggestion.
+   * `true` after the first vote to disable feedback buttons.
    */
-  const [hasVoted, setHasVoted] = useState(false);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
   /** 
-   * State for storing any error message that occurs while submitting outfit feedback.
-   * `null` if no error, or a string message if an error occurs. Displayed to the user.
+   * State for storing any error message that occurs during feedback submission.
+   * `null` if no error, or a string message if an error occurs.
    */
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  /** 
-   * State for storing a success message after outfit feedback is successfully submitted.
-   * `null` initially, or a string message upon successful submission. Displayed to the user.
+  /**
+   * State for displaying a success message after feedback is submitted.
+   * Set to a confirmation message on success, and cleared on subsequent actions.
    */
   const [feedbackSuccessMessage, setFeedbackSuccessMessage] = useState<string | null>(null);
 
   /**
-   * Fetches outfit suggestions from the API when the component mounts or when
-   * `weatherData` or `userGender` props change. It handles loading states and errors.
+   * Asynchronously fetches outfit data from the backend API.
+   * Updates component state based on the API response (suggestions, loading status, errors).
    */
+  const fetchOutfitData = async () => {
+    setIsLoadingSuggestions(true);
+    setSuggestionError(null);
+    try {
+      const suggestions = await getOutfitSuggestions(weatherData, userGender, occasion);
+      setApiSuggestion(suggestions);
+    } catch (error: any) { 
+      const errorMessage = error.data?.detail || error.message || 'Could not fetch suggestions.';
+      setSuggestionError(errorMessage);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
   useEffect(() => {
-    /**
-     * Asynchronously fetches outfit data from the backend API.
-     * Updates component state based on the API response (suggestions, loading status, errors).
-     */
-    const fetchOutfitData = async () => {
-      if (!weatherData) {
-        setSuggestionError("No weather data provided to suggest an outfit.");
-        setIsLoadingSuggestions(false);
-        return;
-      }
-      setIsLoadingSuggestions(true);
-      setSuggestionError(null);
-      setApiSuggestion(null);
-      try {
-        const response = await getOutfitSuggestions(weatherData, userGender);
-        setApiSuggestion(response);
-      } catch (err: any) {
-        let msg = 'Failed to fetch outfit suggestions.';
-        if (err.data && typeof err.data.detail === 'string') {
-          msg = err.data.detail;
-        } else if (err.message) {
-          msg = err.message;
-        }
-        setSuggestionError(msg);
-        console.error("Failed to fetch outfit suggestions:", err);
-      } finally {
-        setIsLoadingSuggestions(false);
-      }
-    };
-
     fetchOutfitData();
-  }, [weatherData, userGender]);
+  }, [weatherData, userGender, occasion]);
 
-  /**
-   * Handles the submission of outfit feedback (like/dislike) to the API.
-   * It constructs the payload and updates the UI based on the API response (success/error).
-   * @param feedbackType - The type of feedback to submit ('like' or 'dislike').
-   */
   /**
    * Handles the submission of outfit feedback (like/dislike) to the API.
    * It constructs the payload using current weather data, the API suggestion, and user gender (if available).
-   * It then calls `submitOutfitFeedback` and updates the UI with success or error messages,
-   * and sets `hasVoted` to true to prevent further submissions for the same suggestion.
+   * It also manages the UI state for feedback submission, including success and error messages, and disables buttons after a vote.
    *
    * @param {'like' | 'dislike'} feedbackType - The type of feedback being submitted ('like' or 'dislike').
    */
   const handleFeedback = async (feedbackType: 'like' | 'dislike') => {
-    setFeedbackError(null); 
-    setFeedbackSuccessMessage(null); 
+    if (hasVoted) return; // Prevent multiple submissions
     if (!apiSuggestion) {
-      setFeedbackError("Cannot submit feedback: outfit suggestion not available.");
+      setFeedbackError('Cannot submit feedback: no suggestion was loaded.');
       return;
     }
-    const payload: OutfitFeedbackPayload = {
-      weather_data: weatherData, // weatherData from props is already camelCase FrontendWeatherData
-      suggested_outfit: apiSuggestion, // apiSuggestion (OutfitSuggestionApiResponse) has the correct structure
-      user_gender_at_feedback: userGender,
+
+    setFeedbackError(null);
+    setFeedbackSuccessMessage(null);
+
+    const feedbackPayload: OutfitFeedbackPayload = {
+      weather_data: weatherData,
+      suggested_outfit: {
+        items: apiSuggestion.suggested_items,
+        advice: apiSuggestion.advice_strings,
+      },
       feedback_type: feedbackType,
+      user_gender_at_feedback: userGender,
     };
 
     try {
-      await submitOutfitFeedback(payload);
-      setFeedbackSuccessMessage(`Feedback (${feedbackType}) submitted successfully for "${title}"!`);
-      setHasVoted(true); 
+      await submitOutfitFeedback(feedbackPayload);
+      setFeedbackSuccessMessage('Thank you for your feedback!');
+      setHasVoted(true); // Disable buttons after successful vote
     } catch (error: any) {
-      console.error('Failed to submit outfit feedback:', error);
       let errorMessage = 'An unexpected error occurred.';
       if (error && error.isApiError && error.status === 409) {
         errorMessage = error.data?.detail || 'You have already submitted feedback for this time slot.';
@@ -216,7 +198,7 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
   return (
     <div className="outfit-section">
       <h4>{title}</h4>
-      {apiSuggestion.suggested_items.length > 0 ? (
+      {apiSuggestion?.suggested_items?.length > 0 ? (
         <ul>
           {apiSuggestion.suggested_items.map(itemKey => (
             <li key={itemKey}>{OUTFIT_ITEM_NAMES[itemKey] || itemKey}</li>
@@ -225,7 +207,7 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
       ) : (
         <p>No specific outfit items to suggest for this period.</p>
       )}
-      {apiSuggestion.advice_strings.length > 0 && (
+      {apiSuggestion?.advice_strings?.length > 0 && (
         <>
           <h5>Consider:</h5>
           <ul>
@@ -260,6 +242,12 @@ export const SingleOutfitAdvice: React.FC<SingleOutfitAdviceProps> = ({ weatherD
  * @returns {React.ReactElement} The rendered outfit advisor modal.
  */
 const OutfitAdvisor: React.FC<OutfitAdvisorProps> = ({ currentWeatherAdvice, forecastAdvice, onClose, userGender }) => {
+  const [occasion, setOccasion] = useState<string>('');
+
+  const handleOccasionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setOccasion(event.target.value);
+  };
+
   return (
     <div className="outfit-advisor-modal-backdrop">
       <div className="outfit-advisor-modal-content">
@@ -268,11 +256,23 @@ const OutfitAdvisor: React.FC<OutfitAdvisorProps> = ({ currentWeatherAdvice, for
         </button>
         <h2>Outfit Advisor</h2>
         
+        <div className="outfit-advisor-controls">
+          <label htmlFor="occasion-select">Select Occasion:</label>
+          <select id="occasion-select" value={occasion} onChange={handleOccasionChange}>
+            <option value="">None</option>
+            <option value="Work Office">Work Office</option>
+            <option value="Casual Outing">Casual Outing</option>
+            <option value="Formal Event">Formal Event</option>
+            <option value="Sports">Sports</option>
+          </select>
+        </div>
+
         {currentWeatherAdvice && (
           <SingleOutfitAdvice 
             weatherData={currentWeatherAdvice} 
             title="Current Conditions" 
             userGender={userGender} 
+            occasion={occasion}
           />
         )}
 
@@ -285,6 +285,7 @@ const OutfitAdvisor: React.FC<OutfitAdvisorProps> = ({ currentWeatherAdvice, for
                 weatherData={slotData}
                 title={new Date(slotData.datetime || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} 
                 userGender={userGender}
+                occasion={occasion}
               />
             ))}
           </div>

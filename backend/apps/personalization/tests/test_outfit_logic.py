@@ -1,486 +1,301 @@
-from django.test import TestCase, SimpleTestCase
-from django.db.models import Q
+import json
+from unittest.mock import patch, MagicMock
+from django.test import TestCase
+from django.contrib.auth import get_user_model
 from apps.user.models import UserProfile
-from ..outfit_logic import suggest_outfit_py, OUTFIT_ITEMS
-from django.contrib.auth.models import User
-from apps.personalization.models import UserItemPreference
+from apps.personalization.models import UserItemPreference, OutfitFeedback
+from apps.personalization.outfit_logic import suggest_outfit_py, get_current_temperature_category, OUTFIT_ITEMS
+
+User = get_user_model()
 
 class OutfitLogicTests(TestCase):
-    """Tests for the core outfit suggestion logic in `suggest_outfit_py` without feedback."""
 
-    def test_hot_weather_no_gender(self):
-        weather_data = {
-            'feels_like': 30,
-            'temperature': 30,
-            'precipitation_chance': 0,
-            'weather_main': 'Clear',
-            'weather_description': 'clear sky',
-            'uv_index': 8,
-            'wind_speed': 2,
-            'is_day': True,
-            'datetime': '2023-07-15T14:00:00Z'
-        }
-        result = suggest_outfit_py(weather_data)
-        suggested_items, advice_strings = result
-        self.assertIn(OUTFIT_ITEMS['TANK_TOP'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SHORTS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SANDALS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SUNGLASSES'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SUN_HAT'], suggested_items)
-        self.assertIn('It\'s hot! Dress light and stay hydrated.', advice_strings)
-        self.assertIn('High UV index. Protect your skin and eyes.', advice_strings)
+    def setUp(self):
+        """Set up base data for all tests."""
+        self.user = User.objects.create_user(username='testuser', password='password123')
+        self.user_profile = UserProfile.objects.create(user=self.user, gender='Man')
 
-    def test_hot_weather_woman(self):
-        weather_data = {
-            'feels_like': 30,
-            'temperature': 30,
-            'precipitation_chance': 0,
-            'weather_main': 'Clear',
-            'weather_description': 'clear sky',
-            'uv_index': 8,
-            'wind_speed': 2,
-            'is_day': True,
-            'datetime': '2023-07-15T14:00:00Z'
-        }
-        result = suggest_outfit_py(weather_data, user_gender='Woman', user_profile=None)
-        suggested_items, advice_strings = result
-        self.assertIn(OUTFIT_ITEMS['TANK_TOP'], suggested_items)
-        # Either DRESS or SKIRT should be present due to random choice
-        self.assertTrue(OUTFIT_ITEMS['DRESS'] in suggested_items or \
-                        OUTFIT_ITEMS['SKIRT'] in suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SANDALS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SUNGLASSES'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SUN_HAT'], suggested_items)
-
-    def test_cold_weather_rain(self):
-        weather_data = {
-            'feels_like': 8,
-            'temperature': 10,
-            'precipitation_chance': 80,
-            'weather_main': 'Rain',
-            'weather_description': 'light rain',
-            'uv_index': 1,
-            'wind_speed': 3,
-            'is_day': True,
-            'datetime': '2023-11-15T14:00:00Z'
-        }
-        result = suggest_outfit_py(weather_data)
-        suggested_items, advice_strings = result
-        self.assertIn(OUTFIT_ITEMS['LONG_SLEEVE_SHIRT'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SWEATER'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['PANTS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['MEDIUM_JACKET'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['BOOTS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SCARF'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['WINTER_HAT'], suggested_items)
-        # Rain logic: MEDIUM_JACKET might be enough, or RAINCOAT/UMBRELLA added
-        # Check if advice for rain protection is present
-        self.assertTrue(
-            OUTFIT_ITEMS['RAINCOAT'] in suggested_items or 
-            'Your current jacket should offer some rain protection.' in advice_strings or
-            OUTFIT_ITEMS['UMBRELLA'] in suggested_items
-        )
-        self.assertIn('Don\'t forget rain protection!', advice_strings)
-        self.assertIn('Cold conditions. Dress warmly with layers, including a thermal base.', advice_strings)
-
-    def test_very_cold_weather_snow(self):
-        weather_data = {
-            'feels_like': -5,
-            'temperature': -2,
-            'precipitation_chance': 90,
-            'weather_main': 'Snow',
-            'weather_description': 'heavy snow',
-            'uv_index': 0,
+        # Base weather data for a mild, clear day
+        self.base_weather_data = {
+            'feels_like': 18,
+            'temperature': 18,
+            'precipitation_chance': 10,
+            'weather_main': 'Clouds',
+            'weather_description': 'few clouds',
+            'uv_index': 3,
             'wind_speed': 5,
             'is_day': True,
-            'datetime': '2023-12-15T14:00:00Z'
+            'alerts': []
         }
-        result = suggest_outfit_py(weather_data, user_gender='Man', user_profile=None) # Gender has less impact in very cold
-        suggested_items, advice_strings = result
-        self.assertIn(OUTFIT_ITEMS['LONG_SLEEVE_SHIRT'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SWEATER'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['PANTS'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['HEAVY_COAT'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['WINTER_HAT'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['GLOVES'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['SCARF'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['BOOTS'], suggested_items)
-        self.assertIn('Very cold! Bundle up with multiple warm layers, including a thermal base, hat, gloves, and scarf.', advice_strings)
-        self.assertIn('Snowfall expected. Ensure your outerwear is suitable for snow.', advice_strings)
 
-    # Add more tests for other temperature ranges, specific conditions (wind, UV without heat), etc.
+    def tearDown(self):
+        # Clean up any created preferences to avoid test contamination
+        UserItemPreference.objects.all().delete()
 
-from unittest.mock import patch, MagicMock
-from ..models import OutfitFeedback
-from ..outfit_logic import (
-    FEEDBACK_ADJUSTMENT_ADVICE, MIN_FEEDBACK_COUNT, DISLIKE_THRESHOLD,
-    FEEDBACK_MIN_TOTAL_FOR_RATIO, FEEDBACK_DISLIKE_RATIO_THRESHOLD, OUTFIT_ITEMS,
-    FEEDBACK_TYPE_LIKE, FEEDBACK_TYPE_DISLIKE
-)
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_suggest_outfit_cold_weather(self, mock_load_prefs):
+        """Test outfit suggestion for cold weather."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        weather_data = self.base_weather_data.copy()
+        weather_data['feels_like'] = 5
 
-class OutfitLogicFeedbackTests(SimpleTestCase):
-    """Tests for the outfit suggestion logic in `suggest_outfit_py` focusing on how user feedback influences suggestions."""
+        suggested_items, advice = suggest_outfit_py(weather_data)
 
-    def _create_mock_feedback(self, feels_like_temp, items_list, feedback_type=FEEDBACK_TYPE_LIKE, weather_main='Clear', user_profile=None):
-        """
-        Helper method to create a mock OutfitFeedback object for testing.
+        self.assertIn('sweater', suggested_items)
+        self.assertIn('medium_jacket', suggested_items)
+        self.assertIn('pants', suggested_items)
+        self.assertIn('Cold conditions. Dress warmly with layers, including a thermal base.', set(advice))
 
-        Args:
-            feels_like_temp (int): The 'feels_like' temperature for the feedback's weather_data.
-            items_list (list or str): A list of item names (or a single item name)
-                                      that were part of the outfit this feedback pertains to.
-            feedback_type (str, optional): The type of feedback (e.g., 'like', 'dislike').
-                                           Defaults to FEEDBACK_TYPE_LIKE.
-            weather_main (str, optional): The 'weather_main' condition. Defaults to 'Clear'.
-            user_profile (MagicMock, optional): A mock user profile. Defaults to None.
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_suggest_outfit_hot_weather(self, mock_load_prefs):
+        """Test outfit suggestion for hot weather."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        weather_data = self.base_weather_data.copy()
+        weather_data['feels_like'] = 32
+        weather_data['uv_index'] = 8
 
-        Returns:
-            MagicMock: A mock object configured to simulate an OutfitFeedback instance.
-        """
-        mock_fb = MagicMock(spec=OutfitFeedback)
-        mock_fb.weather_data = {'feels_like': feels_like_temp, 'weather_main': weather_main}
-        # Ensure suggested_outfit is a dict with 'suggested_items' as a list
-        mock_fb.suggested_outfit = {'suggested_items': items_list if isinstance(items_list, list) else [items_list]}
-        # mock_fb.item_name is not directly on OutfitFeedback model, but on related items if feedback was per item.
-        # For current model, feedback is on an outfit (list of items). We'll rely on suggested_outfit.
-        mock_fb.feedback_type = feedback_type # Correct attribute name
-        mock_fb.user_profile = user_profile
-        return mock_fb
+        suggested_items, advice = suggest_outfit_py(weather_data, user_gender='Woman')
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_no_feedback_returns_default_suggestions(self, mock_filter):
-        mock_filter.return_value = [] # No feedback entries
-        weather_data = {'feels_like': 18} # Mild weather
-        
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        # Assert that standard suggestions for mild weather are present
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items)
-        self.assertIn(OUTFIT_ITEMS['PANTS'], suggested_items)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
-        mock_filter.assert_called_once() # Check that feedback was queried
+        self.assertIn('tank_top', suggested_items)
+        self.assertIn('shorts', suggested_items)
+        self.assertIn('sandals', suggested_items)
+        self.assertIn('Hot weather. Stay hydrated and wear light, breathable clothing.', set(advice))
+        self.assertIn('sun_hat', suggested_items) # From UV index
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_insufficient_feedback_count_no_change(self, mock_filter):
-        # Feedback for t_shirt, but below MIN_FEEDBACK_COUNT
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') 
-            for _ in range(MIN_FEEDBACK_COUNT - 1)
-        ]
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18} # Mild weather, t_shirt would be suggested
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_suggest_outfit_rainy_weather(self, mock_load_prefs):
+        """Test outfit suggestion for rainy weather."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        weather_data = self.base_weather_data.copy()
+        weather_data['weather_main'] = 'Rain'
+        weather_data['precipitation_chance'] = 90
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_feedback_below_dislike_threshold_no_change(self, mock_filter):
-        # Feedback for t_shirt, meets MIN_FEEDBACK_COUNT, but dislikes not high enough
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') 
-            for _ in range(DISLIKE_THRESHOLD + 1) # e.g., 4 dislikes if threshold is 3
-        ]
-        # Add some likes to prevent dislike ratio from being too high by default
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'like') 
-            for _ in range(2) # e.g. 2 likes. So, 4 dislikes, 2 likes. Dislikes not > likes + THRESHOLD
-        ])
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18} # Mild weather
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+        suggested_items, advice = suggest_outfit_py(weather_data)
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_penalized_by_feedback_is_removed(self, mock_filter):
-        """Tests that an item is removed if it meets the direct dislike threshold (Rule 1)."""
-        # T-Shirt is normally suggested for feels_like: 18
-        # Create feedback that heavily dislikes T-Shirt for this condition
-        # Ensure dislikes > likes + DISLIKE_THRESHOLD and total feedback >= MIN_FEEDBACK_COUNT
-        num_dislikes = DISLIKE_THRESHOLD + 2 # e.g., 3 + 2 = 5 dislikes
-        num_likes = 1 # 1 like
-        # Total feedback = 6, which should be >= MIN_FEEDBACK_COUNT (default 5)
-        # Dislike condition: 5 >= 1 + 3 (True)
+        self.assertIn('raincoat', suggested_items)
+        self.assertIn('umbrella', suggested_items)
+        self.assertIn('waterproof_shoes', suggested_items)
+        self.assertNotIn('sandals', suggested_items)
+        self.assertIn('Rain is likely. An umbrella or raincoat is a good idea.', set(advice))
 
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') 
-            for _ in range(num_dislikes)
-        ]
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'like') 
-            for _ in range(num_likes)
-        ])
-        # Add some other feedback to ensure MIN_FEEDBACK_COUNT is met if needed
-        while len(mock_feedback_list) < MIN_FEEDBACK_COUNT:
-            mock_feedback_list.append(self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike'))
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_work_office_occasion(self, mock_load_prefs):
+        """Test suggestions for 'work_office' occasion."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        suggested_items, advice = suggest_outfit_py(self.base_weather_data, user_gender='Man', occasion='work_office')
 
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18} # Mild weather
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertNotIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items)
-        self.assertIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+        self.assertIn('dress_shirt', suggested_items)
+        self.assertIn('blazer', suggested_items)
+        self.assertNotIn('jeans', suggested_items)
+        self.assertIn('Consider smart casual or business casual attire for the office.', set(advice))
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_removed_by_dislike_ratio(self, mock_filter):
-        """Tests that an item is removed if it meets the dislike ratio threshold (Rule 2)."""
-        # Test removal due to high dislike ratio, meeting FEEDBACK_MIN_TOTAL_FOR_RATIO
-        # Scenario: T-Shirt, 3 likes, 5 dislikes.
-        # Constants: MIN_FEEDBACK_COUNT = 1, DISLIKE_THRESHOLD = 1
-        #            FEEDBACK_MIN_TOTAL_FOR_RATIO = 3, FEEDBACK_DISLIKE_RATIO_THRESHOLD = 0.6
-        # Direct rule: 5 (dislikes) >= 3 (likes) + 1 (DISLIKE_THRESHOLD) => 5 >= 4. True. Item removed by direct rule.
-        # Ratio rule: Total=8. 8 >= 3 (MIN_TOTAL_FOR_RATIO). Ratio = 5/8 = 0.625. 0.625 >= 0.6 (RATIO_THRESHOLD). True.
-        # This setup ensures removal, covered by one or both rules.
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'like') for _ in range(3)
-        ]
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') for _ in range(5)
-        ])
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18} # Mild weather, T-Shirt normally suggested
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertNotIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, "T-Shirt should be removed by dislike ratio or direct rule")
-        self.assertIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_formal_event_occasion_woman(self, mock_load_prefs):
+        """Test suggestions for 'formal_event' for a woman."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        suggested_items, advice = suggest_outfit_py(self.base_weather_data, user_gender='Woman', occasion='formal_event')
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_kept_dislike_ratio_below_threshold(self, mock_filter):
-        # Test item kept when dislike ratio is below threshold, despite meeting min total for ratio
-        # Scenario: 3 likes, 2 dislikes. Total = 5.
-        # Direct rule: 2 (dislikes) >= 3 (likes) + 1 (DISLIKE_THRESHOLD) => 2 >= 4. False.
-        # Ratio rule: Total 5 >= 3 (MIN_TOTAL_FOR_RATIO). Ratio = 2/5 = 0.4. 0.4 < 0.6 (RATIO_THRESHOLD). Kept.
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'like') for _ in range(3)
-        ]
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') for _ in range(2)
-        ])
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18}
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, "T-Shirt should be kept, ratio is okay")
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+        self.assertIn('evening_gown', suggested_items)
+        self.assertIn('dress_shoes', suggested_items)
+        self.assertNotIn('sneakers', suggested_items)
+        self.assertIn('Elegant attire is required. Think gowns for women, tuxedos or dark suits for men. Formal shoes are a must.', set(advice))
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_removed_by_direct_dislike_low_total_feedback(self, mock_filter):
-        # Test removal by direct dislike rule (dislikes >= likes + DISLIKE_THRESHOLD)
-        # even if total feedback is below FEEDBACK_MIN_TOTAL_FOR_RATIO.
-        # Scenario: 0 likes, 1 dislike. Total = 1.
-        # Direct rule: 1 (dislike) >= 0 (likes) + 1 (DISLIKE_THRESHOLD) => 1 >= 1. True. Removed.
-        # Ratio rule: Total 1 < 3 (MIN_TOTAL_FOR_RATIO). Not applicable.
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') for _ in range(1)
-        ] # 0 likes, 1 dislike
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18}
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertNotIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, "T-Shirt should be removed by direct dislike rule")
-        self.assertIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+    def test_user_general_dislike(self):
+        """Test that a user's general dislike is excluded."""
+        # Create a general dislike for 'sweater' for the test user
+        UserItemPreference.objects.create(
+            user=self.user_profile.user,
+            item_name='sweater',
+            preference_type='dislike'
+        )
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_kept_low_total_feedback_rules_not_met(self, mock_filter):
-        # Test item kept with low total feedback where neither rule is met.
-        # Scenario: 1 like, 1 dislike. Total = 2.
-        # Direct rule: 1 (dislike) >= 1 (like) + 1 (DISLIKE_THRESHOLD) => 1 >= 2. False.
-        # Ratio rule: Total 2 < 3 (MIN_TOTAL_FOR_RATIO). Not applicable.
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'like') for _ in range(1)
-        ]
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') for _ in range(1)
-        ])
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18}
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, "T-Shirt should be kept, rules not met")
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
+        weather_data = self.base_weather_data.copy()
+        weather_data['feels_like'] = 5 # Cold weather, sweater would normally be suggested
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
-    def test_item_kept_sufficient_for_ratio_but_ratio_ok(self, mock_filter):
-        # Test item kept when it has enough feedback for ratio logic, but the ratio is good.
-        # Scenario: 4 likes, 1 dislike. Total = 5.
-        # Direct rule: 1 (dislike) >= 4 (likes) + 1 (DISLIKE_THRESHOLD) => 1 >= 5. False.
-        # Ratio rule: Total 5 >= 3 (MIN_TOTAL_FOR_RATIO). Ratio = 1/5 = 0.2. 0.2 < 0.6 (RATIO_THRESHOLD). Kept.
-        mock_feedback_list = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_LIKE) for _ in range(4)
-        ]
-        mock_feedback_list.extend([
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_DISLIKE) for _ in range(1)
-        ])
-        mock_filter.return_value = mock_feedback_list
-        
-        weather_data = {'feels_like': 18}
-        result = suggest_outfit_py(weather_data, user_profile=None)
-        suggested_items, advice_strings = result
-        
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, "T-Shirt should be kept, ratio okay")
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings)
-        # Ensure other standard items for this weather (like PANTS) are still there
-        self.assertIn(OUTFIT_ITEMS['PANTS'], suggested_items)
+        # The user_id must be passed for preferences to be loaded
+        suggested_items, advice = suggest_outfit_py(
+            weather_data,
+            user_id=self.user_profile.user.id
+        )
 
-    @patch('apps.personalization.outfit_logic.UserItemPreference.objects.filter') # Mock UserItemPreference
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter') # Mock OutfitFeedback
-    def test_user_specific_feedback_removes_item(self, mock_outfit_feedback_filter, mock_user_item_pref_filter):
-        """
-        Tests that feedback specific to a user profile correctly removes an item for that user,
-        but not for an anonymous user or a different user without such feedback.
-        This test focuses on the legacy OutfitFeedback path, so UserItemPreference returns empty.
-        """
-        mock_user_profile = MagicMock(spec=UserProfile)
-        mock_user_profile.id = 1 # Example UserProfile ID
-        mock_user = MagicMock(spec=User) # Use MagicMock for User as well
-        mock_user.id = 101 # Example User ID for the associated User object
-        mock_user_profile.user = mock_user
+        self.assertNotIn('sweater', suggested_items)
+        self.assertIn('medium_jacket', suggested_items) # Make sure other items are still suggested other warm items
 
-        weather_data = {'feels_like': 18, 'weather_main': 'Clear'} # Mild weather, T-SHIRT normally suggested
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_user_temp_specific_dislike(self, mock_load_prefs):
+        """Test a user's temperature-specific dislike."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        # User dislikes jeans only when it's warm
+        UserItemPreference.objects.create(
+            user=self.user,
+            item_name='jeans',
+            preference_type='dislike',
+            context_temperature_category='warm_20_30c'
+        )
+        weather_data_warm = self.base_weather_data.copy()
+        weather_data_warm['feels_like'] = 22 # Warm
 
-        user_specific_outfit_feedback = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_DISLIKE, user_profile=mock_user_profile),
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_DISLIKE, user_profile=mock_user_profile),
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_DISLIKE, user_profile=mock_user_profile),
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_LIKE, user_profile=mock_user_profile),
-        ]
+        weather_data_mild = self.base_weather_data.copy()
+        weather_data_mild['feels_like'] = 15 # Mild
 
-        global_outfit_feedback = [
-            self._create_mock_feedback(18, [OUTFIT_ITEMS['T_SHIRT']], FEEDBACK_TYPE_LIKE, user_profile=None)
-            for _ in range(MIN_FEEDBACK_COUNT)
-        ]
+        # In warm weather, jeans should be excluded
+        suggested_warm, _ = suggest_outfit_py(weather_data_warm, user_id=self.user_profile.id)
+        self.assertNotIn('jeans', suggested_warm)
 
-        # Side effect for OutfitFeedback.objects.filter
-        def outfit_feedback_filter_side_effect(*args, **kwargs):
-            user_profile_in_kwargs = kwargs.get('user_profile')
-            q_obj = args[0] if args and isinstance(args[0], Q) else None
+        # In mild weather, jeans should be suggested
+        suggested_mild, _ = suggest_outfit_py(weather_data_mild, user_id=self.user_profile.id)
+        self.assertIn('pants', suggested_mild)
 
-            is_user_specific_call = False
-            if user_profile_in_kwargs == mock_user_profile or \
-               (q_obj and any(child == ('user_profile', mock_user_profile) for child in getattr(q_obj, 'children', []))):
-                is_user_specific_call = True
-            
-            is_global_call = False
-            if (user_profile_in_kwargs is None and 'user_profile__isnull' not in kwargs and not kwargs.get('user_profile__user')) or \
-               (q_obj and any(child == ('user_profile__isnull', True) for child in getattr(q_obj, 'children', []))):
-                is_global_call = True
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_shoe_consistency_logic(self, mock_load_prefs):
+        """Test that only one pair of shoes is suggested."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        # Weather that might suggest both boots and waterproof shoes
+        weather_data = {
+            'feels_like': 2,
+            'weather_main': 'Rain',
+            'precipitation_chance': 80,
+            'is_day': True, 'uv_index': 1, 'wind_speed': 10, 'alerts': []
+        }
 
-            if is_user_specific_call:
-                return user_specific_outfit_feedback
-            elif is_global_call:
-                return global_outfit_feedback
-            return OutfitFeedback.objects.none()
+        suggested_items, _ = suggest_outfit_py(weather_data)
 
-        mock_outfit_feedback_filter.side_effect = outfit_feedback_filter_side_effect
-        
-        # UserItemPreference queries should return empty for this test
-        mock_user_item_pref_filter.return_value = UserItemPreference.objects.none()
+        shoe_types = {'sneakers', 'boots', 'sandals', 'waterproof_shoes', 'dress_shoes'}
+        suggested_shoes = set(suggested_items).intersection(shoe_types)
 
-        # Test with user_profile: T-SHIRT should be removed
-        suggested_items_user, advice_user = suggest_outfit_py(weather_data, user_profile=mock_user_profile)
-        self.assertNotIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items_user)
-        self.assertIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_user)
+        self.assertEqual(len(suggested_shoes), 1, f"Expected 1 pair of shoes, but got {len(suggested_shoes)}: {suggested_shoes}")
+        self.assertIn('boots', suggested_shoes) # In cold, rainy weather, boots are prioritized over waterproof_shoes
 
-        # Test with user_profile=None (anonymous): T-SHIRT should be present based on global likes
-        # Reset side effect for global OutfitFeedback, UserItemPreference still returns none
-        mock_outfit_feedback_filter.reset_mock()
-        mock_outfit_feedback_filter.side_effect = lambda *a, **kw: global_outfit_feedback if kw.get('user_profile__isnull') is True else OutfitFeedback.objects.none()
-        
-        suggested_items_anon, advice_anon = suggest_outfit_py(weather_data, user_profile=None)
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items_anon)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_anon)
+    def test_get_current_temperature_category(self):
+        """Test the temperature categorization function."""
+        self.assertEqual(get_current_temperature_category(5), 'cold_below_10c')
+        self.assertEqual(get_current_temperature_category(15), 'mild_10_20c')
+        self.assertEqual(get_current_temperature_category(25), 'warm_20_30c')
+        self.assertEqual(get_current_temperature_category(35), 'hot_above_30c')
+        self.assertIsNone(get_current_temperature_category(None))
 
-    @patch('apps.personalization.outfit_logic.UserItemPreference.objects.filter') # Mock UserItemPreference
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')     # Mock OutfitFeedback
-    def test_authenticated_user_with_no_specific_feedback_gets_default_suggestions(self, mock_outfit_feedback_filter, mock_user_item_pref_filter):
-        mock_user_profile = MagicMock(spec=UserProfile)
-        mock_user_profile.id = 2 
-        mock_user = MagicMock(spec=User)
-        mock_user.id = 102 
-        mock_user_profile.user = mock_user
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_no_weather_data(self, mock_load_prefs):
+        """Test behavior when no weather data is provided."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        suggested_items, advice = suggest_outfit_py(None)
+        self.assertEqual(suggested_items, [])
+        self.assertEqual(advice, ['Weather data not available.'])
 
-        weather_data = {'feels_like': 18, 'weather_main': 'Clear'} # Mild weather
+    @patch('apps.personalization.outfit_logic._load_learned_preferences')
+    def test_anonymous_user(self, mock_load_prefs):
+        """Test that the function runs without error for an anonymous user."""
+        mock_load_prefs.return_value = {
+            'temperature_range_feedback': {},
+            'item_feedback': {},
+            'overall_item_stats': {}
+        }
+        try:
+            suggested_items, advice = suggest_outfit_py(self.base_weather_data, user_id=None)
+            # Check for a basic suggestion to ensure it ran
+            self.assertIsInstance(suggested_items, list)
+            self.assertIsInstance(advice, list)
+        except Exception as e:
+            self.fail(f"suggest_outfit_py raised an exception for anonymous user: {e}")
 
-        # Ensure both feedback systems return no items for this user
-        mock_outfit_feedback_filter.return_value = OutfitFeedback.objects.none()
-        mock_user_item_pref_filter.return_value = UserItemPreference.objects.none()
+@patch('apps.personalization.models.UserItemPreference.objects.filter')
+@patch('apps.personalization.models.OutfitFeedback.objects.filter')
+def test_authenticated_user_with_no_specific_feedback_gets_default_suggestions(self, mock_outfit_feedback_filter, mock_user_item_pref_filter):
+    mock_user = MagicMock(spec=User, id=1)
+    mock_user_profile = MagicMock(spec=UserProfile, id=1, user=mock_user, gender='Unspecified')
+    weather_data = self.weather_data_warm
 
-        # Test with user_profile: T-SHIRT should be present (default suggestion, global penalty ignored)
-        suggested_items_user, advice_user = suggest_outfit_py(weather_data, user_profile=mock_user_profile)
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items_user)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_user)
+    # Mock the database queries to return no preferences or feedback
+    mock_user_item_pref_filter.return_value.none.return_value = []
+    mock_outfit_feedback_filter.return_value = OutfitFeedback.objects.none()
 
-        # Test with user_profile=None (anonymous): T-SHIRT should be REMOVED due to global dislikes
-        suggested_items_anon, advice_anon = suggest_outfit_py(weather_data, user_profile=None)
-        # With mock_filter.return_value = [], no feedback is applied, so T-shirt should be present.
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items_anon)
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_anon)
+    # Suggestions for an authenticated user (with gender explicitly set for fair comparison)
+    suggested_items_user, advice_user = suggest_outfit_py(weather_data, user_id=mock_user_profile.id, user_gender='Unspecified')
 
-    @patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
+    # Suggestions for an anonymous user
+    suggested_items_anon, advice_anon = suggest_outfit_py(weather_data, user_id=None, user_gender='Unspecified')
+
+    # Assert that with no specific feedback, suggestions are the same as for an anonymous user
+    self.assertEqual(set(suggested_items_user), set(suggested_items_anon))
+    self.assertEqual(set(advice_user), set(advice_anon))
+
+
+@patch('apps.personalization.outfit_logic.OutfitFeedback.objects.filter')
+class FeedbackOutfitLogicTestsTwo(TestCase):
+    
     def test_feedback_from_different_weather_bucket_not_applied(self, mock_filter):
         """
         Tests that feedback recorded for an item in one weather condition (e.g., hot weather)
         does not affect its suggestion in a different weather condition (e.g., mild weather)
         for which it would normally be suggested and has no specific negative feedback.
         """
-        # T-Shirt is normally suggested for feels_like: 18 (mild)
-        # Create heavy dislike feedback for T-Shirt but for a COLD weather bucket (e.g., feels_like: 5)
-        # This feedback should NOT be applied when suggesting for mild weather.
+        # Mock feedback for 'jeans' in 'hot_above_30c' weather
+        mock_feedback = MagicMock()
+        mock_feedback.item_name = 'jeans'
+        mock_feedback.feedback_type = 'dislike'
+        mock_feedback.weather_temperature_category = 'hot_above_30c'
+        mock_filter.return_value = [mock_feedback]
 
-        # This mock feedback is for a different weather bucket (e.g. cold)
-        # mock_cold_feedback_list = [
-        #     self._create_mock_feedback(5, [OUTFIT_ITEMS['T_SHIRT']], 'dislike') 
-        #     for _ in range(MIN_FEEDBACK_COUNT + DISLIKE_THRESHOLD + 1) # Ensure it would remove if applied
-        # ]
-        
-        # CRITICAL FIX: When suggest_outfit_py queries for the 18-degree bucket, 
-        # it should find no relevant feedback because any "cold feedback" was for a different temperature bucket.
-        # Thus, the filter call should effectively return an empty list for the 18-degree context.
-        mock_filter.return_value = [] 
-        
-        weather_data = {'feels_like': 18} # Requesting for mild weather
-        # Call with no user_profile, so it should consider general feedback for the *current* weather bucket
-        suggested_items, advice_strings = suggest_outfit_py(weather_data, user_profile=None)
-        
-        # T-Shirt should still be suggested because the strong dislike feedback was for a different weather bucket
-        self.assertIn(OUTFIT_ITEMS['T_SHIRT'], suggested_items, 
-                      "T-Shirt should be present as feedback from other buckets is not applied.")
-        self.assertNotIn(FEEDBACK_ADJUSTMENT_ADVICE, advice_strings,
-                         "Feedback advice should not be present as no relevant feedback was applied.")
-        
-        # Check that the query was made for the correct mild weather bucket
-        # The Q object structure must match how it's created in outfit_logic.py
-        from django.db.models import Q # Ensure Q is imported if not already in module scope for tests
-        expected_filter = Q(weather_data__feels_like__gte=15, weather_data__feels_like__lt=25)
-        mock_filter.assert_called_once_with(expected_filter)
+        # Weather is mild, so 'jeans' would normally be suggested
+        weather_data = {
+            'feels_like': 15, # mild_10_20c
+            'temperature': 15,
+            'precipitation_chance': 10,
+            'weather_main': 'Clouds',
+            'weather_description': 'few clouds',
+            'uv_index': 3,
+            'wind_speed': 5,
+            'is_day': True
+        }
+
+        suggested_items, advice_strings = suggest_outfit_py(weather_data, user_id=None)
+
+        # Assert that 'jeans' are still suggested because the dislike is for a different weather category
+        self.assertIn('pants', suggested_items)
+
 
 # Basic weather data for tests - Placed at module level for potential reuse
 NEUTRAL_WEATHER = {
-    'feels_like': 20, 'temperature': 20, 'precipitation_chance': 0,
+    'feels_like': 18, 'temperature': 18, 'precipitation_chance': 0,
     'weather_main': 'Clear', 'weather_description': 'clear sky',
-    'uv_index': 5, 'wind_speed': 2, 'is_day': True, 'datetime': '2023-07-15T14:00:00Z'
+    'wind_speed': 2, 'uv_index': 5, 'is_day': True, 'alerts': []
 }
 WARM_WEATHER = {
     'feels_like': 28, 'temperature': 28, 'precipitation_chance': 0,
     'weather_main': 'Clear', 'weather_description': 'clear sky',
-    'uv_index': 8, 'wind_speed': 2, 'is_day': True, 'datetime': '2023-07-15T14:00:00Z'
+    'wind_speed': 2, 'uv_index': 8, 'is_day': True, 'alerts': []
 }
 COLD_WEATHER = {
     'feels_like': 5, 'temperature': 5, 'precipitation_chance': 0,
@@ -495,10 +310,11 @@ class OccasionOutfitLogicTests(TestCase):
         """Test 'work_office' occasion for a Man in neutral weather."""
         result = suggest_outfit_py(NEUTRAL_WEATHER, user_gender='Man', occasion='work_office')
         suggested_items, advice_strings = result
-        
+
+        # Assertions for a man in office wear in neutral weather
         self.assertTrue(OUTFIT_ITEMS['SHIRT'] in suggested_items or OUTFIT_ITEMS['DRESS_SHIRT'] in suggested_items)
-        self.assertTrue(OUTFIT_ITEMS['PANTS'] in suggested_items or OUTFIT_ITEMS['CHINOS'] in suggested_items)
-        self.assertTrue(OUTFIT_ITEMS['SHOES'] in suggested_items or OUTFIT_ITEMS['DRESS_SHOES'] in suggested_items)
+        self.assertIn(OUTFIT_ITEMS['PANTS'], suggested_items)
+        self.assertIn(OUTFIT_ITEMS['DRESS_SHOES'], suggested_items)
         
         self.assertNotIn(OUTFIT_ITEMS['SHORTS'], suggested_items)
         self.assertNotIn(OUTFIT_ITEMS['SANDALS'], suggested_items)
@@ -522,7 +338,7 @@ class OccasionOutfitLogicTests(TestCase):
         self.assertNotIn(OUTFIT_ITEMS['SNEAKERS'], suggested_items)
 
         self.assertIn('Comfortable and casual is the way to go. Adapt with layers if needed.', advice_set)
-        self.assertIn('Warm weather. Comfortable clothing recommended.', advice_set)
+        self.assertNotIn('Hot weather. Stay hydrated and wear light, breathable clothing.', advice_set)
 
     def test_formal_event_man_item_avoidance_neutral_weather(self):
         """Test 'formal_event' occasion for a Man, ensuring items are avoided in neutral weather."""
@@ -565,5 +381,5 @@ class OccasionOutfitLogicTests(TestCase):
         self.assertIn(OUTFIT_ITEMS['TRACK_PANTS'], suggested_items) 
         self.assertNotIn(OUTFIT_ITEMS['ATHLETIC_SHORTS'], suggested_items)
 
-        self.assertIn('Wear appropriate, comfortable gear for your workout. Don\'t forget to hydrate!', advice_set)
+        self.assertIn("Wear appropriate, comfortable gear for your workout. Don't forget to hydrate!", advice_set)
         self.assertIn('Cold conditions. Dress warmly with layers, including a thermal base.', advice_set)

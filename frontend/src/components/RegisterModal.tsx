@@ -13,7 +13,7 @@ import { RegisterModalProps, GenderOption } from '../types/types';
  * @param {() => void} props.onClose - Callback function to close the modal.
  * @returns {React.ReactElement | null} The registration modal or null if not open.
  */
-const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
+const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitchToLogin }) => {
   /** State for the username input field. */
   const [username, setUsername] = useState('');
   /** State for the email input field. */
@@ -76,12 +76,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
       setPreferredUnit('C');
       setGender('Man');
     } catch (err: any) {
-      if (typeof err === 'object' && err !== null) {
-        parseFieldErrors(err);
+      // Check for the custom API error structure from apiHelpers
+      if (err && err.isApiError && err.data) {
+        parseFieldErrors(err.data);
       } else if (err instanceof Error) {
         setGeneralError(err.message);
       } else {
-        setGeneralError('Registration failed. Please try again.');
+        setGeneralError('An unexpected error occurred during registration.');
       }
     }
   };
@@ -93,34 +94,33 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
    * @param {any} errorsObj - The error object from the API, expected to contain field names as keys.
    */
   const parseFieldErrors = (errorsObj: any) => {
+    const formatError = (error: string | string[]): string => {
+      return Array.isArray(error) ? error.join(', ') : error;
+    };
+
     if (errorsObj.username) {
-      setUsernameError(errorsObj.username.join(', '));
+      setUsernameError(formatError(errorsObj.username));
     }
     if (errorsObj.email) {
-      setEmailError(errorsObj.email.join(', '));
+      setEmailError(formatError(errorsObj.email));
     }
     if (errorsObj.password) {
-      setPasswordError(errorsObj.password.join(', '));
+      setPasswordError(formatError(errorsObj.password));
     }
     if (errorsObj.location) {
-      setLocationError(errorsObj.location.join(', '));
+      setLocationError(formatError(errorsObj.location));
     }
     if (errorsObj.non_field_errors) {
-      setGeneralError(errorsObj.non_field_errors.join(', '));
+      setGeneralError(formatError(errorsObj.non_field_errors));
     }
-    if (typeof errorsObj === 'object') {
-      Object.keys(errorsObj).forEach((key) => {
-        if (
-          key !== 'username' &&
-          key !== 'email' &&
-          key !== 'password' &&
-          key !== 'location' &&
-          key !== 'non_field_errors'
-        ) {
-          setGeneralError(`Error in ${key}: ${errorsObj[key].join(', ')}`);
-        }
-      });
-    }
+
+    // Handle any other unexpected field errors
+    Object.keys(errorsObj).forEach((key) => {
+      if (!['username', 'email', 'password', 'location', 'non_field_errors'].includes(key)) {
+        const message = formatError(errorsObj[key]);
+        setGeneralError((prev) => prev ? `${prev}\nError in ${key}: ${message}` : `Error in ${key}: ${message}`);
+      }
+    });
   };
 
   /**
@@ -164,7 +164,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
           X
         </button>
         <h2>Register</h2>
-        {success && <p className="register-success">{success}</p>}
+                {success && (
+          <p className="register-success">
+            {success}{' '}
+            <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin?.(); }} className="login-link">
+              HERE
+            </a>
+          </p>
+        )}
         {generalError && <p className="register-error">{generalError}</p>}
         <form data-testid="register-form" onSubmit={handleSubmit}>
           <div>

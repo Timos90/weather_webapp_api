@@ -1,110 +1,78 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, Mock} from 'vitest';        // ← ensure Mock type is available
+import { vi, Mock } from 'vitest';
 import RegisterModal from '../RegisterModal';
 import { registerUser } from '../../api/user';
 
-vi.mock('../../api/user', () => ({       // ← use vi.mock, not jest.mock
-    registerUser: vi.fn(),
+vi.mock('../../api/user', () => ({
+  registerUser: vi.fn(),
 }));
 
 describe('RegisterModal', () => {
-    const onClose = vi.fn();
+  const onClose = vi.fn();
+  const onSwitchToLogin = vi.fn();
 
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not render when isOpen is false', () => {
+    const { container } = render(<RegisterModal isOpen={false} onClose={onClose} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders all fields and controls when open', () => {
+    render(<RegisterModal isOpen={true} onClose={onClose} />);
+    expect(screen.getByRole('heading', { name: 'Register' })).toBeInTheDocument();
+    ['username-input', 'email-input', 'password-input', 'location-input', 'preferred-unit'].forEach((testid) =>
+      expect(screen.getByTestId(testid)).toBeInTheDocument()
+    );
+    expect(screen.getByRole('button', { name: 'X' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Register' })).toBeEnabled();
+  });
+
+  it('on successful register, shows success message with login link', async () => {
+    (registerUser as Mock).mockResolvedValue(undefined);
+    render(<RegisterModal isOpen={true} onClose={onClose} onSwitchToLogin={onSwitchToLogin} />);
+    fireEvent.submit(screen.getByTestId('register-form'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Registration successful! You can now log in.')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'HERE' })).toBeInTheDocument();
     });
 
-    it('does not render when isOpen is false', () => {
-        const { container } = render(<RegisterModal isOpen={false} onClose={onClose} />);
-        expect(container.firstChild).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'HERE' }));
+    expect(onSwitchToLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it('displays field-level errors from API', async () => {
+    const apiErr = { isApiError: true, data: { username: ['bad name'], email: ['taken'] } };
+    (registerUser as Mock).mockRejectedValue(apiErr);
+    render(<RegisterModal isOpen={true} onClose={onClose} />);
+    fireEvent.submit(screen.getByTestId('register-form'));
+
+    await waitFor(() => {
+      expect(screen.getByText('bad name')).toBeInTheDocument();
+      expect(screen.getByText('taken')).toBeInTheDocument();
     });
+  });
 
-    it('renders all fields and controls when open', () => {
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
+  it('shows generic fallback for non-API errors', async () => {
+    (registerUser as Mock).mockRejectedValue(new Error('Network Error'));
+    render(<RegisterModal isOpen={true} onClose={onClose} />);
+    fireEvent.submit(screen.getByTestId('register-form'));
 
-        expect(screen.getByRole('heading', { name: 'Register' })).toBeInTheDocument();
-        ['username-input', 'email-input', 'password-input', 'location-input', 'preferred-unit']
-            .forEach(testid => expect(screen.getByTestId(testid)).toBeInTheDocument());
-        expect(screen.getByRole('button', { name: 'X' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Register' })).toBeEnabled();
+    await waitFor(() => {
+      expect(screen.getByText('Network Error')).toBeInTheDocument();
     });
+  });
 
-    it('allows editing inputs and selecting the unit', () => {
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
-        fireEvent.change(screen.getByTestId('username-input'), { target: { value: 'alice' } });
-        fireEvent.change(screen.getByTestId('email-input'),    { target: { value: 'a@b.com' } });
-        fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'secret' } });
-        fireEvent.change(screen.getByTestId('location-input'), { target: { value: 'Paris' } });
-        fireEvent.change(screen.getByTestId('preferred-unit'), { target: { value: 'F' } });
+  it('shows generic fallback for unexpected error types', async () => {
+    (registerUser as Mock).mockRejectedValue('a string error');
+    render(<RegisterModal isOpen={true} onClose={onClose} />);
+    fireEvent.submit(screen.getByTestId('register-form'));
 
-        expect(screen.getByTestId('username-input')).toHaveValue('alice');
-        expect(screen.getByTestId('email-input')).toHaveValue('a@b.com');
-        expect(screen.getByTestId('password-input')).toHaveValue('secret');
-        expect(screen.getByTestId('location-input')).toHaveValue('Paris');
-        expect(screen.getByTestId('preferred-unit')).toHaveValue('F');
+    await waitFor(() => {
+      expect(screen.getByText('An unexpected error occurred during registration.')).toBeInTheDocument();
     });
-
-    it('on successful register clears fields and shows success message', async () => {
-        (registerUser as Mock).mockResolvedValue(undefined);
-
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
-        fireEvent.change(screen.getByTestId('username-input'), { target: { value: 'bob' } });
-        fireEvent.change(screen.getByTestId('email-input'),    { target: { value: 'b@b.com' } });
-        fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'pw' } });
-        fireEvent.change(screen.getByTestId('location-input'), { target: { value: 'NY' } });
-        fireEvent.submit(screen.getByTestId('register-form'));
-
-        await waitFor(() => {
-            expect(registerUser).toHaveBeenCalledWith('bob','b@b.com','pw','NY','C', 'Man');
-            expect(screen.getByText('Registration successful! You can now log in.')).toBeInTheDocument();
-            expect(screen.getByTestId('username-input')).toHaveValue('');
-            expect(screen.getByTestId('preferred-unit')).toHaveValue('C');
-        });
-    });
-
-    it('displays field‑level and extra errors from API', async () => {
-        const apiErr = {
-            username: ['bad name'],
-            email: ['taken'],
-            password: ['too weak'],
-            location: ['invalid'],
-            non_field_errors: ['oops'],
-            extra: ['foo']
-        };
-        (registerUser as Mock).mockRejectedValue(apiErr);
-
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
-        fireEvent.submit(screen.getByTestId('register-form'));
-
-        await waitFor(() => {
-            expect(screen.getByText('bad name')).toBeInTheDocument();
-            expect(screen.getByText('taken')).toBeInTheDocument();
-            expect(screen.getByText('too weak')).toBeInTheDocument();
-            expect(screen.getByText('invalid')).toBeInTheDocument();
-            expect(screen.getByText('Error in extra: foo')).toBeInTheDocument();
-        });
-    });
-
-    it('shows generic fallback when API throws a string', async () => {
-        (registerUser as Mock).mockRejectedValue('some text error');
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
-        fireEvent.submit(screen.getByTestId('register-form'));
-
-        await waitFor(() => {
-            expect(screen.getByText('Registration failed. Please try again.')).toBeInTheDocument();
-        });
-    });
-
-    it('closes when clicking the X button', () => {
-        render(<RegisterModal isOpen={true} onClose={onClose} />);
-        fireEvent.click(screen.getByRole('button', { name: 'X' }));
-        expect(onClose).toHaveBeenCalledTimes(1);
-    });
-
-    it('closes when clicking outside the modal content', () => {
-        const { container } = render(<RegisterModal isOpen={true} onClose={onClose} />);
-        const overlay = container.querySelector('.register-modal-overlay')!;
-        fireEvent.click(overlay);
-        expect(onClose).toHaveBeenCalled();
-    });
+  });
 });

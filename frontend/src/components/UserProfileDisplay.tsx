@@ -1,55 +1,52 @@
 import React, { useState, useEffect, MouseEvent } from 'react';
-import { fetchUserProfile, updateUserProfile } from '../api/user';
-import { fetchFavoriteLocations, removeFromFavorites } from '../api/weather';
+import { updateUserProfile } from '../api/user';
+import { removeFromFavorites } from '../api/weather';
 import '../css/UserProfilePage.css';
 import '../css/deleteAnimation.css'; 
 import { runDeleteAnimation } from '../utils/deleteAnimation'; 
 import DeleteAccountModal from './DeleteAccountModal';
-import { Favorite, UserProfileProps, GenderOption } from '../types/types';
+import { Favorite, UserProfileProps, GenderOption, UserProfileData } from '../types/types';
 
 interface UserProfileDisplayProps extends UserProfileProps {
   onProfileDataChange?: (newGender: GenderOption) => void;
-  onTemperatureUnitChange?: (newUnit: 'C' | 'F') => void; 
+  onTemperatureUnitChange?: (newUnit: 'C' | 'F') => void;
+  profile: UserProfileData | null;
+  favorites: Favorite[];
 }
 
-const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onFavoriteClick, onFavoriteUpdated, onProfileDataChange, onTemperatureUnitChange }) => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [location, setLocation] = useState('');
-  const [preferredTemperatureUnit, setPreferredTemperatureUnit] = useState<'C' | 'F'>('C');
-  const [gender, setGender] = useState<GenderOption | undefined>(undefined);
+const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onFavoriteClick, onFavoriteUpdated, onProfileDataChange, onTemperatureUnitChange, profile, favorites: initialFavorites }) => {
+  const [username, setUsername] = useState(profile?.username || '');
+  const [email, setEmail] = useState(profile?.email || '');
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
+  const [location, setLocation] = useState(profile?.location || '');
+  const [preferredTemperatureUnit, setPreferredTemperatureUnit] = useState<'C' | 'F'>(profile?.preferred_temperature_unit || 'C');
+  const [gender, setGender] = useState<GenderOption | undefined>(profile?.gender);
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [locationError, setLocationError] = useState('');
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>(initialFavorites);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('auth_token');
-    if (token) {
-      fetchUserProfile()
-        .then((data) => {
-          setLocation(data.location);
-          setPreferredTemperatureUnit(data.preferred_temperature_unit === 'F' ? 'F' : 'C');
-          setEmail(data.user.email);
-          setUsername(data.user.username);
-          setFirstName(data.user.first_name);
-          setLastName(data.user.last_name);
-          setGender(data.gender as GenderOption);
-        })
-        .catch(() => setGeneralError('Unable to fetch user profile. Please try again later.'));
-
-      fetchFavoriteLocations()
-        .then(setFavorites)
-        .catch(() => setGeneralError('Unable to fetch favorite locations. Please try again later.'));
+    if (profile) {
+      setUsername(profile.username || '');
+      setEmail(profile.email || '');
+      setFirstName(profile.first_name || '');
+      setLastName(profile.last_name || '');
+      setLocation(profile.location || '');
+      setPreferredTemperatureUnit(profile.preferred_temperature_unit || 'C');
+      setGender(profile.gender);
     }
-  }, []);
+  }, [profile]);
+
+  useEffect(() => {
+    setFavorites(initialFavorites);
+  }, [initialFavorites]);
 
   const handleToggleUnit = async () => {
     const newUnit = preferredTemperatureUnit === 'C' ? 'F' : 'C';
@@ -106,15 +103,16 @@ const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onFavoriteClick
       };
       const updatedProfile = await updateUserProfile(updatedProfileData);
 
-      setUsername(updatedProfile.user.username);
-      setEmail(updatedProfile.user.email);
-      setFirstName(updatedProfile.user.first_name);
-      setLastName(updatedProfile.user.last_name);
+      setUsername(updatedProfile.username);
+      setEmail(updatedProfile.email);
+      setFirstName(updatedProfile.first_name);
+      setLastName(updatedProfile.last_name);
       setLocation(updatedProfile.location);
       setPreferredTemperatureUnit(updatedProfile.preferred_temperature_unit);
       setGender(updatedProfile.gender as GenderOption);
       setSuccessMessage('Profile updated successfully!');
-      if (updatedProfile.gender && onProfileDataChange) {
+      if (onProfileDataChange) {
+        // Notify parent to refetch profile data
         onProfileDataChange(updatedProfile.gender as GenderOption);
       }
     } catch (err: any) { // Catch as 'any' to inspect its properties
@@ -168,9 +166,13 @@ const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onFavoriteClick
         }
         btn.classList.remove('deleting');
       }
-    }, 1500);
+    }, 1100);
   };
   
+  if (!profile) {
+    return <div>Loading profile...</div>;
+  }
+
   const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newGenderValue = e.target.value as GenderOption | '';
     const newGender = newGenderValue === '' ? undefined : newGenderValue;

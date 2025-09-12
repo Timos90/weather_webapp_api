@@ -28,7 +28,7 @@ class OutfitFeedbackSerializer(serializers.ModelSerializer):
 class OutfitSuggestionRequestSerializer(serializers.Serializer):
     feels_like = serializers.FloatField(required=True)
     temperature = serializers.FloatField(required=True)
-    precipitation_chance = serializers.IntegerField(required=False, default=0, min_value=0, max_value=100)
+    precipitation_chance = serializers.IntegerField(required=False, min_value=0, max_value=100, allow_null=True, default=0)
     weather_main = serializers.CharField(max_length=100, required=True) # e.g., "Clouds", "Rain"
     weather_description = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     uv_index = serializers.FloatField(required=False, min_value=0, allow_null=True)
@@ -37,7 +37,8 @@ class OutfitSuggestionRequestSerializer(serializers.Serializer):
     cloud_cover = serializers.IntegerField(required=False, min_value=0, max_value=100, allow_null=True)
     air_quality_index = serializers.IntegerField(required=False, min_value=0, allow_null=True) # General AQI
     is_day = serializers.BooleanField(required=False, default=True)
-    datetime = serializers.DateTimeField(required=True)
+    datetime = serializers.DateTimeField(required=False, allow_null=True)
+    occasion = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
     user_gender = serializers.ChoiceField(
         choices=['Man', 'Woman', 'Other', 'Unspecified'],
         required=False,

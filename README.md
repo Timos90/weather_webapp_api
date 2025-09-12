@@ -16,36 +16,29 @@ Weather_webapp_api is a full‑stack weather web application that lets users loo
 
 ---
 
+## What's New in v1.1.0: Auth System Polish & Bug Fixes
+
+This minor update focuses on hardening the authentication system, improving the user experience, and fixing key bugs. It enhances the existing functionality with more robust error handling and a cleaner codebase.
+
+- **Authentication System Enhancements**:
+  - **JWT Token Refresh**: Implemented an automatic JWT token refresh mechanism on the frontend. Users now remain logged in seamlessly without being interrupted by expired tokens.
+  - **Refactored Profile Updates**: The backend logic for updating user profiles has been refactored to align with Django REST Framework best practices, moving validation logic into the serializer for a cleaner, more maintainable codebase.
+  - **Improved User Flow**: After a new user successfully registers, they are now presented with a direct link to the login modal, streamlining the onboarding process.
+
+- **Key Bug Fixes**:
+  - **Registration Error Handling**: Fixed a critical bug where the registration form would crash if a user tried to register with a username that was already taken. The system now displays a clear and specific error message.
+  - **Profile Update UI**: Resolved an issue where changes to a user's profile (e.g., first name) were not immediately reflected in the UI, requiring a manual page refresh. The interface now updates instantly after a successful save.
+  - **Test Suite Stability**: Addressed and fixed all failing tests in both the frontend (Vitest) and backend (Django `unittest`) test suites, ensuring the codebase is stable and reliable.
+
+---
+
 ## What's New in v1.0.0: The AI Personalization Update
 
-This major update transitions the application from a standard weather utility to a personalized, AI-powered weather companion. The core logic for suggestions has been moved from the frontend to a robust Django backend, enabling more sophisticated and context-aware features.
+This major update transitioned the application from a standard weather utility to a personalized, AI-powered weather companion. The core logic for suggestions was moved from the frontend to a robust Django backend, enabling more sophisticated and context-aware features.
 
-- **AI-Powered Outfit Advisor**: A new modal on the homepage provides dynamic outfit suggestions.
-  - **Context-Aware Logic**: Suggestions are tailored based on weather (temperature, precipitation, UV index), time of day, user-provided occasion (e.g., "casual outing," "work"), and user gender.
-  - **Learns from Feedback**: The system learns from user "likes" and "dislikes" on suggested items to improve future recommendations. Feedback is analyzed for different weather conditions and alerts.
-  - **Intelligent Shoe Logic**: A sophisticated system ensures only one, context-appropriate pair of shoes is suggested (e.g., sandals for warm casual outings, waterproof shoes for rain).
-
-- **Backend Overhaul & New Personalization API**:
-  - **New `personalization` App**: A dedicated Django app now houses all the AI logic.
-  - **New API Endpoints**:
-    - `POST /api/v1/personalization/suggest-outfit/`: Takes weather and occasion data, returns a full outfit suggestion.
-    - `POST /api/v1/personalization/outfit-feedback/`: Collects user feedback to train the suggestion model.
-  - **Automated Feedback Analysis**: A background cron job runs periodically within the Docker container to process and analyze user feedback.
-  - **News Deduplication**: The news feed logic now intelligently removes duplicate articles fetched from different sources.
-
-- **Frontend Enhancements**:
-  - **OutfitAdvisor Integration**: The `OutfitAdvisor` component is now fully integrated into the homepage, calling the new backend API.
-  - **Refactored API Layer**: All frontend `fetch` calls have been migrated to `axios` for more robust data fetching.
-  - **Improved Documentation**: Completed JSDoc for all major React components, enhancing maintainability.
-
-- **Notable Fixes & Improvements**:
-  - **Refined Suggestion Logic**: Corrected order of operations for applying feedback (temperature-based, alert-specific) and improved consistency of advice strings in `suggest_outfit_py`.
-  - **Deterministic Outfit Suggestions**: Removed random elements from core suggestion logic to ensure consistent outputs for given inputs, crucial for reliable testing and behavior.
-  - **Enhanced Shoe Selection**: Made shoe consistency logic more robust and context-aware, particularly for casual and warm weather scenarios.
-  - **Backend Test Stability**: Resolved `TypeError` issues and improved mocking in `apps/personalization/tests/test_outfit_logic.py`.
-  - **Frontend Stability**: Updated type guards in `WeatherDisplay.tsx` for more reliable weather data rendering.
-  - **User Profile Enhancement**: Integrated an optional 'gender' field into user profiles, allowing for more tailored suggestions.
-  - **Developer Experience**: Added new `make` commands (e.g., `dev-test-personalization`) for streamlined testing of specific app modules.
+- **AI-Powered Outfit Advisor**: A new modal on the homepage provides dynamic, context-aware outfit suggestions based on weather, occasion, and user feedback.
+- **Backend Overhaul**: Introduced a new `personalization` Django app, new API endpoints for suggestions and feedback, and an automated background job for feedback analysis.
+- **Frontend Enhancements**: Integrated the new Outfit Advisor, migrated the API layer to `axios`, and completed JSDoc for all major components.
 
 ---
 

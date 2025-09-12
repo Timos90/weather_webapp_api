@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import NavBar from '../../components/NavBar';
 import { vi } from 'vitest';
-import axios from 'axios';
 import * as userApi from '../../api/user';
 
 describe('NavBar Component', () => {
@@ -44,6 +43,9 @@ describe('NavBar Component', () => {
   it('renders login/register buttons when not authenticated', () => {
     render(
       <NavBar
+        isAuthenticated={false}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}
@@ -61,6 +63,9 @@ describe('NavBar Component', () => {
   it('capitalizes first char in search input and calls onSearch', () => {
     render(
       <NavBar
+        isAuthenticated={false}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}
@@ -82,6 +87,9 @@ describe('NavBar Component', () => {
     vi.stubGlobal('alert', vi.fn());
     render(
       <NavBar
+        isAuthenticated={false}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}
@@ -102,6 +110,9 @@ describe('NavBar Component', () => {
     vi.spyOn(userApi, 'updateUserProfile').mockResolvedValue({});
     const { rerender } = render(
       <NavBar
+        isAuthenticated={true}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}
@@ -123,13 +134,16 @@ describe('NavBar Component', () => {
     // Simulate parent component re-rendering NavBar with the new unit prop
     rerender(
       <NavBar
+        isAuthenticated={true}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
-        currentLocation="Test City, TC"
         onProfileClick={onProfileClick}
+        onUnitChange={onUnitChange}
+        currentLocation="Test City, TC"
         favorites={[]}
         onAddFavorite={onAddFavorite}
         onDeleteFavorite={onDeleteFavorite}
-        onUnitChange={onUnitChange}
         unit="F" // Pass the new unit
       />
     );
@@ -153,11 +167,14 @@ describe('NavBar Component', () => {
     sessionStorage.setItem('auth_token', 'token');
     vi.spyOn(userApi, 'fetchUserProfile').mockResolvedValue({ username: 'testuser', location: 'Test Location', preferred_temperature_unit: 'C' });
 
-    const mockFavorites = [{ city_name: 'London', country_code: 'GB', latitude: 51.5074, longitude: 0.1278 }];
+    const mockFavorites = [{ id: 1, city_name: 'London', country_code: 'GB', latitude: 51.5074, longitude: 0.1278 }];
     // already a favorite
     await act(async () => {
       render(
         <NavBar
+          isAuthenticated={true}
+          onLoginSuccess={() => {}}
+          onLogout={() => {}}
           onSearch={onSearch}
           onProfileClick={onProfileClick}
           onUnitChange={onUnitChange}
@@ -178,6 +195,9 @@ describe('NavBar Component', () => {
     await act(async () => {
       render(
         <NavBar
+          isAuthenticated={true}
+          onLoginSuccess={() => {}}
+          onLogout={() => {}}
           onSearch={onSearch}
           onProfileClick={onProfileClick}
           onUnitChange={onUnitChange}
@@ -195,18 +215,15 @@ describe('NavBar Component', () => {
     expect(onAddFavorite).toHaveBeenCalled();
   });
 
-  it('handles logout success', async () => {
+  it('calls onLogout when logout button is clicked', async () => {
+    const onLogoutMock = vi.fn();
     sessionStorage.setItem('auth_token', 'token');
-
-    // Mock axios for successful logout
-    vi.spyOn(axios, 'post').mockResolvedValueOnce({
-      data: { message: 'bye' }
-    } as any);
-
-    vi.stubGlobal('alert', vi.fn());
 
     render(
       <NavBar
+        isAuthenticated={true}
+        onLoginSuccess={() => {}}
+        onLogout={onLogoutMock}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}
@@ -219,53 +236,16 @@ describe('NavBar Component', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /logout/i }));
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('bye'));
-    expect(sessionStorage.getItem('auth_token')).toBeNull();
-    expect(window.location.href).toContain('/');
-
-    // Restore the original implementation
-    vi.restoreAllMocks();
+    await waitFor(() => expect(onLogoutMock).toHaveBeenCalled());
   });
 
-  it('handles logout failure', async () => {
-    // Set up for error test
-    sessionStorage.setItem('auth_token', 'token');
-    // Mock potential profile fetch that might occur during re-renders
-    vi.spyOn(userApi, 'fetchUserProfile').mockResolvedValue({ username: 'testuser', location: 'Test Location', preferred_temperature_unit: 'C' });
-
-    // Mock axios for failed logout
-    vi.spyOn(axios, 'post').mockRejectedValueOnce({
-      isAxiosError: true,
-      response: { 
-        data: { error: 'err' } 
-      }
-    } as any);
-
-    vi.stubGlobal('alert', vi.fn());
-
-    render(
-      <NavBar
-        onSearch={onSearch}
-        onProfileClick={onProfileClick}
-        onUnitChange={onUnitChange}
-        currentLocation=""
-        favorites={[]}
-        onAddFavorite={onAddFavorite}
-        onDeleteFavorite={onDeleteFavorite}
-        unit="C"
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('err'));
-
-    // Restore the original implementation
-    vi.restoreAllMocks();
-  });
 
   it('opens and closes login & register modals', () => {
     render(
       <NavBar
+        isAuthenticated={false}
+        onLoginSuccess={() => {}}
+        onLogout={() => {}}
         onSearch={onSearch}
         onProfileClick={onProfileClick}
         onUnitChange={onUnitChange}

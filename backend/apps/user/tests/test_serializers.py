@@ -53,7 +53,7 @@ class UserProfileSerializerTest(TestCase):
         profile = UserProfile.objects.create(user=user, location='Athens', preferred_temperature_unit='F')
         serializer = UserProfileSerializer(profile)
         data = serializer.data
-        self.assertEqual(data['user']['username'], 'profileuser')
-        self.assertEqual(data['user']['email'], 'profile@example.com')
+        self.assertEqual(data['username'], 'profileuser')
+        self.assertEqual(data['email'], 'profile@example.com')
         self.assertEqual(data['location'], 'Athens')
         self.assertEqual(data['preferred_temperature_unit'], 'F')

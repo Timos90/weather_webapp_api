@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BASE_WEATHER_URL;
 
-const getAuthToken = (): string | null => sessionStorage.getItem('auth_token');
+
 
 export const fetchCoordinates = async (location: string): Promise<{ lat: number; lon: number }> => {
   const api_key = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
@@ -147,40 +147,21 @@ export const fetchForecast = async (
 };
 
 export const fetchNews = async (location?: string): Promise<NewsArticle[]> => {
-  const token = getAuthToken();
-  if (!token) {
-    // Simulate an API error structure for consistency if needed by calling component
-    // Or simply throw a standard error, depending on how HomePage handles auth errors for news
-    throw { 
-      message: "User is not authenticated. Please log in to see news.", 
-      status: 401, 
-      isApiError: true 
-    };
-  }
-
   const url = `${BASE_URL}/news/?location=${encodeURIComponent(location || '')}`;
 
   try {
-    const data = await apiRequest(url, {
-      headers: { 'Authorization': `Token ${token}` },
-    });
+    const data = await apiRequest(url);
 
-    // Assuming 'data' is the array of articles or an object like { articles: [], message: "..." }
-    // Adjust based on backend changes. For now, assume 'data' is the array.
     if (Array.isArray(data)) {
-      const articles = data.map((article: any) => ({
+      return data.map((article: any) => ({
         title: article.title,
         url: article.url,
         publishedAt: article.publishedAt,
-        content: article.content, // Ensure content is used or handled if not needed for display card
+        content: article.content,
         urlToImage: article.urlToImage || null,
       }));
-
-      return articles;
     } else if (data && Array.isArray(data.articles)) {
-      // Handle structured response like { articles: [], message: "..." }
-       if (data.articles.length === 0 && data.message) {
-        // Potentially use data.message in the UI if backend provides it
+      if (data.articles.length === 0 && data.message) {
         console.info(data.message);
       }
       return data.articles.map((article: any) => ({
@@ -191,90 +172,40 @@ export const fetchNews = async (location?: string): Promise<NewsArticle[]> => {
         urlToImage: article.urlToImage || null,
       }));
     }
-    // If data is not in expected format, or backend indicates no news in a way not yet handled
     console.warn('Unexpected data format for news:', data);
-    return []; // Fallback to empty array
+    return [];
 
   } catch (error: any) {
-    // apiRequest will throw an error with { message, status, data, isApiError }
-    // Log the error for debugging, then re-throw to be handled by the calling component (e.g., HomePage)
-    console.error("Error fetching news via apiRequest:", error.message, error.status, error.data);
-    throw error; // Re-throw the structured error from apiRequest
+    console.error(`Error fetching news: ${error.message}`);
+    throw error;
   }
 };
 
 export const fetchFavoriteLocations = async () => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
-  try {
-    const response = await axios.get(`${BASE_URL}/favorites/`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Unable to fetch favorite locations.');
-    }
-    throw error;
-  }
+  const url = `${BASE_URL}/favorites/`;
+  // apiRequest will automatically add the Authorization header and handle errors.
+  return apiRequest(url);
 };
 
 export const addToFavorites = async (city_name: string, country_code: string, latitude: number, longitude: number) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
-  try {
-    const response = await axios.post(`${BASE_URL}/favorites/`, {
-      city_name,
-      country_code,
-      latitude,
-      longitude,
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Token ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to add location to favorites.');
-    }
-    throw error;
-  }
+  const url = `${BASE_URL}/favorites/`;
+  return apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: { city_name, country_code, latitude, longitude },
+  });
 };
 
 export const removeFromFavorites = async (city_name: string, country_code: string, latitude: number, longitude: number) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('User is not authenticated. Please log in.');
-  try {
-    const response = await axios.delete(`${BASE_URL}/favorites/`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Token ${token}`,
-      },
-      data: {
-        city_name,
-        country_code,
-        latitude,
-        longitude,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to remove location from favorites.');
-    }
-    throw error;
-  }
+  const url = `${BASE_URL}/favorites/`;
+  return apiRequest(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    data: { city_name, country_code, latitude, longitude },
+  });
 };
 
 export const fetchAlerts = async (location?: string, latitude?: number, longitude?: number): Promise<any[]> => {
-  const token = sessionStorage.getItem('auth_token');
-  if (!token) {
-    throw new Error("User is not authenticated. Please log in.");
-  }
   let urlParams = new URLSearchParams();
   if (location) {
     urlParams.append('location', location);
@@ -286,24 +217,16 @@ export const fetchAlerts = async (location?: string, latitude?: number, longitud
 
   const queryString = urlParams.toString();
   const url = `${BASE_URL}/alerts/${queryString ? '?' + queryString : ''}`;
+
   try {
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Token ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching alerts:", error);
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 404) {
-        return [];
-      }
-      if (error.response?.data) {
-        throw new Error(error.response.data.error || 'Failed to fetch alerts.');
-      }
+    return await apiRequest(url);
+  } catch (error: any) {
+    console.error(`Error fetching alerts: ${error.message}`);
+    // A 404 for alerts means there are no active alerts, which is not an error condition.
+    if (error.status === 404) {
+      return [];
     }
-    return [];
+    // For other errors, re-throw to be handled by the calling component.
+    throw error;
   }
 };

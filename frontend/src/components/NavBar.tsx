@@ -1,6 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { updateUserProfile, fetchUserProfile } from '../api/user';
-import axios from 'axios'; 
 import '../css/NavBar.css';
 import logo from '../img/logo_main2.svg';
 import searchIcon from '../img/search-icon.svg';
@@ -15,6 +14,9 @@ const LazyRegisterModal = React.lazy(() => import('./RegisterModal'));
  * provides temperature unit switching (C/F), and manages user authentication (login, register, logout, profile access).
  */
 const NavBar: React.FC<NavBarProps> = ({
+  isAuthenticated,
+  onLoginSuccess,
+  onLogout,
   onSearch,
   currentLocation,
   onProfileClick,
@@ -22,36 +24,22 @@ const NavBar: React.FC<NavBarProps> = ({
   onAddFavorite,
   onDeleteFavorite,
   onUnitChange,
-  unit, // Destructure new unit prop
+  unit,
 }) => {
-  /** Tracks whether the current user is authenticated. */
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  /** Stores the current value of the location search input. */
   const [searchLocation, setSearchLocation] = useState<string>('');
-  // Removed local unit state, will use 'unit' prop instead
 
-  /**
-   * On component mount, checks for an authentication token in session storage to set the
-   * `isAuthenticated` state. If authenticated, it fetches the user's profile to set
-   * the preferred temperature unit.
-   */
   useEffect(() => {
-    const token = sessionStorage.getItem('auth_token');
-    setIsAuthenticated(!!token);
-
-    if (token) {
+    if (isAuthenticated) {
       fetchUserProfile()
         .then((profile) => {
           const profileUnit = profile.preferred_temperature_unit === 'F' ? 'F' : 'C';
-          // If the fetched unit is different from the current unit prop, call onUnitChange
-          // This ensures HomePage (source of truth) is updated if initial load had a different default
           if (profileUnit !== unit) {
             onUnitChange(profileUnit);
           }
         })
         .catch((err) => console.error('Profile fetch error:', err));
     }
-  }, []);
+  }, [isAuthenticated, unit, onUnitChange]);
 
   /**
    * Toggles the temperature unit between Celsius ('C') and Fahrenheit ('F').
@@ -97,33 +85,12 @@ const NavBar: React.FC<NavBarProps> = ({
    * Makes an API call to the logout endpoint, removes the authentication token from session storage,
    * alerts the user of the outcome, and reloads the page to reset the application state.
    */
-  const handleLogout = async () => {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_USER_URL}/logout/`, {}, {
-        headers: {
-          Authorization: `Token ${sessionStorage.getItem('auth_token')}`,
-        },
-      });
-      
-      sessionStorage.removeItem('auth_token');
-      alert(response.data.message);
-      window.location.href = '/';
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.data) {
-        alert(error.response.data.error || 'Failed to log out.');
-      } else {
-        alert('Failed to log out.');
-      }
-    }
-  };
+  
 
   /** Boolean indicating if the `currentLocation` is already in the user's `favorites` list. */
-  const isFavorite = currentLocation
-    ? favorites.some((fav) => {
-        const [city, country] = currentLocation.split(',').map((s) => s.trim());
-        return fav.city_name === city && fav.country_code === country;
-      })
-    : false;
+  const isFavorite = currentLocation && favorites.some(
+    (fav) => fav.city_name.toLowerCase() === currentLocation.split(',')[0].trim().toLowerCase()
+  );
 
   /** Controls the visibility of the LoginModal. */
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -211,7 +178,7 @@ const NavBar: React.FC<NavBarProps> = ({
             <button onClick={onProfileClick} className="profile-button">
               Profile
             </button>
-            <button onClick={handleLogout} className="logout-button">
+            <button onClick={onLogout} className="logout-button">
               Logout
             </button>
           </>
@@ -223,7 +190,7 @@ const NavBar: React.FC<NavBarProps> = ({
         onClose={() => setShowLoginModal(false)}
         onLoginSuccess={() => {
           setShowLoginModal(false);
-          window.location.reload();
+          onLoginSuccess();
         }}
       />
 
@@ -231,7 +198,10 @@ const NavBar: React.FC<NavBarProps> = ({
         <LazyRegisterModal
           isOpen={showRegisterModal}
           onClose={() => setShowRegisterModal(false)}
-          onRegisterSuccess={() => setShowRegisterModal(false)}
+          onSwitchToLogin={() => {
+            setShowRegisterModal(false);
+            setShowLoginModal(true);
+          }}
         />
       </Suspense>
     </div>

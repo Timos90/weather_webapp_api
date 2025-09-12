@@ -1,7 +1,7 @@
 // Test suite for personalization API client functions
 import { getOutfitSuggestions, submitOutfitFeedback, FrontendWeatherData, OutfitSuggestionApiResponse, OutfitFeedbackPayload } from '../personalization';
 import { apiRequest } from '../apiHelpers'; // Import to mock
-import { getAuthToken } from '../user'; // Import to mock, user.ts is in src/api/
+import { getAccessToken } from '../user';
 
 // Mock modules
 vi.mock('../apiHelpers');
@@ -14,7 +14,7 @@ describe('Personalization API Client', () => {
   beforeEach(() => {
     // Clear mocks before each test
     vi.mocked(apiRequest).mockClear();
-    vi.mocked(getAuthToken).mockClear();
+    vi.mocked(getAccessToken).mockClear();
   });
 
   describe('getOutfitSuggestions', () => {
@@ -131,7 +131,7 @@ describe('Personalization API Client', () => {
   describe('submitOutfitFeedback', () => {
     beforeEach(() => {
       // Mock getAuthToken to return a dummy token for these tests
-      vi.mocked(getAuthToken).mockReturnValue('test-auth-token');
+      vi.mocked(getAccessToken).mockReturnValue('test-auth-token');
     });
     const mockFeedbackPayload: OutfitFeedbackPayload = {
         weather_data: {
@@ -161,7 +161,6 @@ describe('Personalization API Client', () => {
 
         expect(url).toContain('/feedback/outfit/');
         expect(options?.method).toBe('POST');
-        expect(options?.headers?.Authorization).toBe('Token test-auth-token');
         expect(options?.data).toEqual(mockFeedbackPayload);
         expect(options?.data.weather_data.unit).toBe('C');
         expect(options?.data.weather_data.temperature).toBe(25);

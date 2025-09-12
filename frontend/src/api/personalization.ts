@@ -1,5 +1,5 @@
 import { apiRequest } from './apiHelpers';
-import { getAuthToken } from './user'; // Assuming getAuthToken is exported from user.ts
+import { getAccessToken } from './user';
 
 const BASE_URL = import.meta.env.VITE_BASE_PERSONALIZATION_URL;
 
@@ -11,8 +11,9 @@ export interface OutfitFeedbackPayload {
 }
 
 export const submitOutfitFeedback = async (payload: OutfitFeedbackPayload) => {
-  const token = getAuthToken();
+  const token = getAccessToken();
   if (!token) {
+    // Although apiRequest will handle unauthorized errors, checking early prevents unnecessary API calls.
     throw new Error('User is not authenticated. Please log in to submit feedback.');
   }
 
@@ -22,11 +23,11 @@ export const submitOutfitFeedback = async (payload: OutfitFeedbackPayload) => {
 
   const url = `${BASE_URL}/feedback/outfit/`;
 
+  // The Authorization header is now automatically added by the apiRequest helper.
   return apiRequest(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Token ${token}`,
     },
     data: payload,
   });
@@ -95,7 +96,8 @@ export interface OutfitSuggestionApiResponse {
 
 export const getOutfitSuggestions = async (
   weatherData: FrontendWeatherData,
-  userGender?: string
+  userGender?: string,
+  occasion?: string,
 ): Promise<OutfitSuggestionApiResponse> => {
   if (!BASE_URL) {
     throw new Error('Personalization API base URL is not configured.');
@@ -105,44 +107,12 @@ export const getOutfitSuggestions = async (
   const { unit, ...restOfWeatherData } = weatherData;
   const snakeCaseRestOfWeatherData = transformKeysToSnakeCase(restOfWeatherData) as OutfitSuggestionApiRequestData;
 
-  // Sanitize precipitation_chance to ensure it's an integer or null
-  if (snakeCaseRestOfWeatherData.hasOwnProperty('precipitation_chance')) {
-    let pcValue: any = snakeCaseRestOfWeatherData.precipitation_chance; // Use 'any' for robust runtime type checking
-
-    if (typeof pcValue === 'string') {
-      if (pcValue.trim() === '') {
-        pcValue = null; // Convert empty string to null
-      } else {
-        const parsed = parseFloat(pcValue);
-        if (!isNaN(parsed)) {
-          pcValue = Math.round(parsed); // Round to nearest integer
-        } else {
-          console.warn(`precipitation_chance was a non-numeric string: "${pcValue}". Setting to null.`);
-          pcValue = null; // Non-numeric string, set to null
-        }
-      }
-    } else if (typeof pcValue === 'number') {
-      if (!Number.isInteger(pcValue)) {
-        pcValue = Math.round(pcValue); // Round float to nearest integer
-      }
-    } else if (pcValue === undefined) {
-      pcValue = null; // Explicitly convert undefined to null if property exists but is undefined
-    } else if (pcValue !== null) {
-      // Handles other unexpected types e.g. boolean, object (if data is really malformed)
-      console.warn(`Unexpected type for precipitation_chance: ${typeof pcValue}, value: "${pcValue}". Setting to null.`);
-      pcValue = null;
-    }
-    // pcValue should now be number (integer) or null
-    if (pcValue === null) {
-      delete (snakeCaseRestOfWeatherData as any).precipitation_chance;
-    } else {
-      snakeCaseRestOfWeatherData.precipitation_chance = pcValue as number;
-    }
+  // Sanitize precipitation_chance to ensure it's a number or null.
+  const pcValue = snakeCaseRestOfWeatherData.precipitation_chance;
+  if (pcValue === null || pcValue === undefined || isNaN(Number(pcValue))) {
+    (snakeCaseRestOfWeatherData as any).precipitation_chance = null;
   } else {
-    // If precipitation_chance is not a property on snakeCaseRestOfWeatherData, 
-    // it will be undefined. For an optional field with allow_null=False, 
-    // it's best to omit it entirely, which is achieved by not setting it here.
-    delete (snakeCaseRestOfWeatherData as any).precipitation_chance; // Ensure it's removed if not present or became undefined
+    (snakeCaseRestOfWeatherData as any).precipitation_chance = Math.round(Number(pcValue));
   }
   
   const payload: any = { ...snakeCaseRestOfWeatherData };
@@ -151,6 +121,9 @@ export const getOutfitSuggestions = async (
   }
   if (userGender) {
     payload.user_gender = userGender;
+  }
+  if (occasion) {
+    payload.occasion = occasion;
   }
 
   const url = `${BASE_URL}/suggest-outfit/`;

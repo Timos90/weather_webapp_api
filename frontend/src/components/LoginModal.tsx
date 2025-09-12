@@ -54,24 +54,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     try {
-      const data: { token: string } = await loginUser(username, password);
-      if (data && data.token) {
-        sessionStorage.setItem('auth_token', data.token);
-        if (rememberMe) {
-          localStorage.setItem('remembered_username', username);
-        } else {
-          localStorage.removeItem('remembered_username');
-        }
+      await loginUser(username, password);
+      // The loginUser function now handles storing the tokens directly in sessionStorage.
+      // We just need to handle the UI logic for 'Remember me'.
+      if (rememberMe) {
+        localStorage.setItem('remembered_username', username);
       } else {
-        throw new Error('Invalid login response. Token not found.');
+        localStorage.removeItem('remembered_username');
       }
       onLoginSuccess?.();
       window.dispatchEvent(new Event('storage'));
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       setUsername('');
       setPassword('');
-      setError(err instanceof Error ? err.message : 'Invalid username or password. Please try again.');
+      // Check if the error is an API error with a 401 status
+      if (err.response && err.response.status === 401) {
+        setError('Invalid username or password. Please try again.');
+      } else {
+        // For other errors, use the error message or a generic fallback
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      }
     }
   };
 

@@ -104,21 +104,48 @@ export interface NewsDisplayProps {
 export type GenderOption = "Man" | "Woman" | "Non-binary";
 
 export interface Favorite {
+  id: number;
   city_name: string;
   country_code: string;
   latitude: number;
   longitude: number;
 }
 
+export interface User {
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface UserProfileData {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  location: string;
+  preferred_temperature_unit: 'C' | 'F';
+  gender?: GenderOption;
+  favorites: Favorite[];
+}
+
 export interface UserProfile {
-  id: number; 
+  id: number;
   username: string;
   email: string;
   favorites?: Favorite[];
-  gender?: GenderOption; 
+  gender?: GenderOption;
+  location?: string;
+  preferred_temperature_unit?: 'C' | 'F';
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface NavBarProps {
+  isAuthenticated: boolean;
+  onLoginSuccess: () => void;
+  onLogout: () => void;
   onSearch: (location: string) => void;
   currentLocation?: string;
   onProfileClick: () => void;
@@ -138,6 +165,7 @@ export interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRegisterSuccess?: () => void;
+  onSwitchToLogin?: () => void;
 }
 
 export interface LoginModalProps {
@@ -153,4 +181,6 @@ export interface AlertsButtonProps {
 export interface UserProfileProps {
   onFavoriteClick: (location: string) => void;
   onFavoriteUpdated?: () => void;
+  profile: UserProfileData | null;
+  favorites: Favorite[];
 }
